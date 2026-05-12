@@ -1,0 +1,370 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nmflyboy/affiliate-site-template/configs/_schema.json",
+  "title": "Affiliate Site Config",
+  "description": "Schema for site-config.json used by the affiliate-site-template build system. Validates the Phase 0 variables for a single affiliate site.",
+  "type": "object",
+  "required": ["version", "site", "seo", "template", "design", "affiliate", "content", "riskTier", "customRules"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Path to this schema file. Optional but recommended for IDE validation."
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version this config conforms to. Currently 1.0.0.",
+      "const": "1.0.0"
+    },
+    "site": {
+      "type": "object",
+      "required": ["domain", "brandName", "tagline", "editorialTeamName", "contactEmail", "niche", "year"],
+      "properties": {
+        "domain": {
+          "type": "string",
+          "pattern": "^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z]{2,})+$",
+          "description": "Bare domain without protocol or trailing slash. Example: brewverdict.com"
+        },
+        "brandName": {
+          "type": "string",
+          "minLength": 2,
+          "description": "Display name of the site brand. Example: BrewVerdict"
+        },
+        "tagline": {
+          "type": "string",
+          "minLength": 5,
+          "description": "Short brand tagline shown in headers, footer, and schema description."
+        },
+        "editorialTeamName": {
+          "type": "string",
+          "description": "Name of the editorial team for author attribution. Example: BrewVerdict Editorial Team"
+        },
+        "namedAuthor": {
+          "type": "string",
+          "description": "Optional named individual author for EEAT byline. When set, appears near the H1 in addition to the editorial team. Example: Robin Lilly"
+        },
+        "contactEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Public contact email for the site. Typically contact@[domain]."
+        },
+        "niche": {
+          "type": "string",
+          "minLength": 3,
+          "description": "The niche or topic of the site. Used to drive content sanitization. Example: specialty coffee brewing equipment"
+        },
+        "year": {
+          "type": "integer",
+          "minimum": 2025,
+          "maximum": 2099,
+          "description": "Current year for content freshness. Example: 2026"
+        }
+      },
+      "additionalProperties": false
+    },
+    "seo": {
+      "type": "object",
+      "required": ["primaryKeyword", "quickAnswer", "indexNowKey"],
+      "properties": {
+        "primaryKeyword": {
+          "type": "string",
+          "minLength": 3,
+          "description": "Exact primary keyword the site targets. Used verbatim in title, meta, H1. Example: best pour over coffee makers"
+        },
+        "authorityStatistic": {
+          "type": "string",
+          "description": "Optional authority statistic with inline citation. Leave empty string to skip; build will not invent. Example: According to FEMA, only 39% of Americans have a household emergency plan."
+        },
+        "quickAnswer": {
+          "type": "string",
+          "minLength": 200,
+          "maxLength": 350,
+          "description": "Direct answer to the primary keyword question. Must be 40 to 50 words. Appears above the hero image, marked with .quick-answer-box class for speakable schema."
+        },
+        "indexNowKey": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$",
+          "description": "32-character lowercase hex IndexNow API key. Unique per site. Used for fast Bing/Yandex indexing."
+        },
+        "ga4MeasurementId": {
+          "type": "string",
+          "pattern": "^G-[A-Z0-9]{10}$",
+          "description": "Optional GA4 Measurement ID. Format: G-XXXXXXXXXX. When provided, GA4 tracking is baked into the HTML head."
+        }
+      },
+      "additionalProperties": false
+    },
+    "template": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["listicle", "review", "headtohead", "tool", "amazon", "leadgen"],
+          "description": "Which template type to build. Determines build type and product count."
+        },
+        "buildType": {
+          "type": "string",
+          "enum": ["react", "html"],
+          "description": "Auto-determined from template type. Listicle and tool default to react; review, headtohead, amazon, leadgen default to html. Override-able only with documented reason."
+        },
+        "handsOnReview": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this site claims first-hand product testing. When true, EEAT rule pack (99-custom/google-eeat-essentials.md) permits first-person experience language. When false, content is research-based only."
+        },
+        "launchJackMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "For review template only. When true, enables launch-jacking layout: countdown timer, two-state CTA, bonus stack, email capture. Requires launch and cart-close timestamps in the launchJack object."
+        },
+        "launchJack": {
+          "type": "object",
+          "description": "Launch-jacking fields. Required when template.launchJackMode is true.",
+          "properties": {
+            "vendor": { "type": "string" },
+            "platform": { "type": "string", "enum": ["JVZoo", "WarriorPlus", "ClickBank", "Direct"] },
+            "frontEndPrice": { "type": "string" },
+            "commission": { "type": "string" },
+            "jvPageUrl": { "type": "string", "format": "uri" },
+            "launchDateTime": { "type": "string", "format": "date-time" },
+            "cartCloseDateTime": { "type": "string", "format": "date-time" },
+            "timezone": { "type": "string" },
+            "bonusStack": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "value"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "value": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            },
+            "emailTool": { "type": "string", "enum": ["MailerLite", "ConvertKit", "SendFox", "None"] },
+            "emailFormId": { "type": "string" }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "design": {
+      "type": "object",
+      "required": ["colorScheme", "primaryColor", "accentColor", "darkestBrandColor"],
+      "properties": {
+        "colorScheme": {
+          "type": "string",
+          "description": "Human-readable color scheme description. Example: deep coffee brown and warm cream"
+        },
+        "primaryColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Primary brand color in hex. Used for backgrounds, dividers, non-CTA accents."
+        },
+        "accentColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Accent color in hex. Reserved EXCLUSIVELY for CTA buttons and hover states per rules/02-design-mandatory.md."
+        },
+        "darkestBrandColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Darkest color in the brand palette. Used for body text, headings, and in-content links per rules/02-design-mandatory.md."
+        }
+      },
+      "additionalProperties": false
+    },
+    "affiliate": {
+      "type": "object",
+      "required": ["networks", "products"],
+      "properties": {
+        "amazonTag": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+-20$",
+          "description": "Amazon Associates tag if Amazon is in networks. Example: brewverdict-20"
+        },
+        "networks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["amazon", "awin", "clickbank", "jvzoo", "warriorplus", "direct"]
+          },
+          "uniqueItems": true,
+          "description": "Affiliate networks used on this site. Drives disclosure requirements and which custom rules to enable."
+        },
+        "products": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "required": ["name", "slug", "affiliateLink", "network"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 2,
+                "description": "Full product name as displayed."
+              },
+              "shortForms": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Optional shorter forms of the product name for auto-linking. Example for Orange Whip Trainer: [\"Orange Whip\"]"
+              },
+              "slug": {
+                "type": "string",
+                "pattern": "^/go/[a-z0-9-]+$",
+                "description": "Path to local /go/ redirect. Format: /go/[lowercase-alphanumeric-hyphen]"
+              },
+              "affiliateLink": {
+                "type": "string",
+                "format": "uri",
+                "description": "The actual affiliate destination URL with all tracking parameters. Treated as opaque; build does not modify."
+              },
+              "network": {
+                "type": "string",
+                "enum": ["amazon", "awin", "clickbank", "jvzoo", "warriorplus", "direct"]
+              },
+              "shortDescription": {
+                "type": "string",
+                "description": "1-2 sentence product description for cards and comparison table."
+              },
+              "bestFor": {
+                "type": "string",
+                "description": "Who or what use case this product is best for. Appears as 'Best For:' line in product card."
+              },
+              "pros": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 3,
+                "maxItems": 5,
+                "description": "3 to 5 bullet points highlighting product strengths."
+              },
+              "considerations": {
+                "type": "array",
+                "items": { "type": "string" },
+                "maxItems": 3,
+                "description": "Optional 1 to 3 considerations or drawbacks. If provided, ALL products in the grid must have considerations (per 05-affiliate-mandatory.md card consistency rule)."
+              },
+              "verdict": {
+                "type": "string",
+                "description": "Optional 1-2 sentence summary verdict. If provided, ALL products in the grid must have a verdict."
+              },
+              "specificDetail": {
+                "type": "string",
+                "description": "One concrete, specific detail that distinguishes this product from generic prose. Required per 04-content-mandatory.md rule 7.5."
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "content": {
+      "type": "object",
+      "required": ["researchScope", "comparisonAxes", "pickedItemNoun", "selectionCriteria", "nicheReviewItems"],
+      "properties": {
+        "researchScope": {
+          "type": "string",
+          "description": "What the editorial team researches in this niche. Example: pour over drippers, kettles, grinders, scales"
+        },
+        "comparisonAxes": {
+          "type": "string",
+          "description": "How readers compare options. Example: budget, brew style, learning curve, ease of cleaning"
+        },
+        "pickedItemNoun": {
+          "type": "string",
+          "description": "Plural noun for what was picked. Used in 'How We Picked These X' heading. Example: pour over setups"
+        },
+        "selectionCriteria": {
+          "type": "string",
+          "description": "How selections were made. Example: real-world usability, price range, availability"
+        },
+        "nicheReviewItems": {
+          "type": "string",
+          "description": "What gets reviewed each update cycle. Example: filtration, pour control, temperature stability"
+        }
+      },
+      "additionalProperties": false
+    },
+    "riskTier": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "description": "Niche risk tier. 1 = health/medical/safety (auto-injects safety disclaimers). 2 = financial (auto-injects financial disclaimers). 3 = general consumer (affiliate disclosure only)."
+    },
+    "tier1Fields": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["activityNoun", "activityVerb", "riskConditions", "riskyLanguageToAvoid", "cautiousLanguageToUseInstead"],
+          "properties": {
+            "activityNoun": {
+              "type": "string",
+              "description": "Singular capitalized activity name. Example: Cold Plunge"
+            },
+            "activityVerb": {
+              "type": "string",
+              "description": "Verb phrase for the activity. Example: using cold exposure"
+            },
+            "riskConditions": {
+              "type": "string",
+              "description": "Medical conditions or circumstances to flag. Example: heart conditions, blood pressure concerns, circulation issues, pregnancy"
+            },
+            "riskyLanguageToAvoid": {
+              "type": "string",
+              "description": "Comma-separated phrases to avoid. Example: cold therapy, recovery, healing, treatment"
+            },
+            "cautiousLanguageToUseInstead": {
+              "type": "string",
+              "description": "Comma-separated cautious alternatives. Example: cold water immersion, cold plunge routine, post-workout cold exposure"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Required when riskTier === 1. Must be null otherwise."
+    },
+    "customRules": {
+      "type": "object",
+      "required": ["enabled", "disabled"],
+      "properties": {
+        "enabled": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "description": "Filenames in rules/99-custom/ to load (without .md extension). Example: [\"google-eeat-essentials\", \"ftc-affiliate-disclosure\"]"
+        },
+        "disabled": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "description": "Filenames in rules/99-custom/ to explicitly skip. Takes precedence over enabled."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": { "properties": { "riskTier": { "const": 1 } } },
+      "then": { "properties": { "tier1Fields": { "type": "object" } } },
+      "else": { "properties": { "tier1Fields": { "type": "null" } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "template": { "properties": { "launchJackMode": { "const": true } } }
+        }
+      },
+      "then": {
+        "properties": {
+          "template": {
+            "required": ["launchJack"]
+          }
+        }
+      }
+    }
+  ]
+}

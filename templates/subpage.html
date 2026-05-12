@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{SUBPAGE_TITLE}} | {{BRAND_NAME}}</title>
+  <meta name="description" content="{{SUBPAGE_META_DESCRIPTION}}">
+  <meta name="author" content="{{EDITORIAL_TEAM_NAME}}">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+  <style>
+    :root {
+      --primary-color: {{PRIMARY_COLOR}};
+      --accent-color: {{ACCENT_COLOR}};
+      --darkest-brand-color: {{DARKEST_BRAND_COLOR}};
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.6; color: var(--darkest-brand-color); background: #FAF7F2; }
+    .container { max-width: 768px; margin: 0 auto; padding: 0 1.25rem; }
+    .site-header { background: var(--primary-color); color: #fff; padding: 0.875rem 0; }
+    .site-header .container { display: flex; align-items: center; justify-content: space-between; }
+    .site-header a.brand { color: #fff; text-decoration: none; font-weight: 700; font-size: 1.125rem; }
+    main { padding: 2rem 0 3rem; }
+    main h1 { font-size: 2rem; margin: 0 0 1.25rem; }
+    main h2 { font-size: 1.5rem; margin: 2rem 0 0.75rem; }
+    main p, main li { font-size: 1rem; }
+    main a { color: var(--darkest-brand-color); text-decoration: underline; font-weight: 500; }
+    main a:hover { text-decoration-color: var(--accent-color); }
+    .site-footer { background: var(--primary-color); color: #E8DCB4; padding: 1.5rem 0; margin-top: 3rem; font-size: 0.875rem; text-align: center; }
+    .site-footer a { color: #fff; margin: 0 0.5rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="brand">{{BRAND_NAME}}</a>
+    </div>
+  </header>
+  <main>
+    <div class="container">
+      <h1>{{SUBPAGE_TITLE}}</h1>
+{{SUBPAGE_BODY}}
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="container">
+      <div>&copy; {{YEAR}} {{BRAND_NAME}}. All rights reserved.</div>
+      <div>
+        <a href="/about/">About</a>
+        <a href="/contact/">Contact</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="/disclosure/">Disclosure</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

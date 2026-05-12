@@ -1,0 +1,186 @@
+{
+  "$schema": "./_schema.json",
+  "version": "1.0.0",
+
+  "site": {
+    "domain": "brewverdict.com",
+    "brandName": "BrewVerdict",
+    "tagline": "Expert reviews of specialty coffee brewing equipment",
+    "editorialTeamName": "BrewVerdict Editorial Team",
+    "namedAuthor": "Robin Lilly",
+    "contactEmail": "contact@brewverdict.com",
+    "niche": "specialty coffee brewing equipment",
+    "year": 2026
+  },
+
+  "seo": {
+    "primaryKeyword": "best pour over coffee makers",
+    "authorityStatistic": "",
+    "quickAnswer": "The best pour over coffee maker for most people is a Hario V60 with a gooseneck kettle and a quality burr grinder. This combination produces consistent extraction, fits a typical kitchen counter, and stays under 200 dollars for the complete setup.",
+    "indexNowKey": "7b728a10cb784d7cbef473fa6f3a260e",
+    "ga4MeasurementId": "G-XXXXXXXXXX"
+  },
+
+  "template": {
+    "type": "listicle",
+    "buildType": "react",
+    "handsOnReview": false,
+    "launchJackMode": false
+  },
+
+  "design": {
+    "colorScheme": "deep coffee brown and warm cream",
+    "primaryColor": "#3D2817",
+    "accentColor": "#C9A961",
+    "darkestBrandColor": "#1A0F08"
+  },
+
+  "affiliate": {
+    "amazonTag": "brewverdict-20",
+    "networks": ["amazon", "awin"],
+    "products": [
+      {
+        "name": "Hario V60 Ceramic Dripper",
+        "shortForms": ["Hario V60", "V60"],
+        "slug": "/go/hariov60",
+        "affiliateLink": "https://amzn.to/REPLACE-WITH-REAL-LINK",
+        "network": "amazon",
+        "shortDescription": "The classic 60-degree cone dripper that defines the pour over genre.",
+        "bestFor": "First-time pour over brewers and traditionalists",
+        "pros": [
+          "Ceramic construction holds heat well during the pour",
+          "Standardized cone size with widely available filters",
+          "Compatible with most kettles and decanters",
+          "Forgiving of small pour technique variations"
+        ],
+        "considerations": [
+          "Requires gooseneck kettle for best results",
+          "Ceramic is breakable if dropped"
+        ],
+        "verdict": "If you are starting pour over and want the format with the most online tutorials and recipe support, the V60 is the right first dripper.",
+        "specificDetail": "The 60-degree cone angle and spiral interior ridges create a flow pattern that responds predictably to pour speed changes."
+      },
+      {
+        "name": "Fellow Stagg EKG Electric Kettle",
+        "shortForms": ["Fellow Stagg", "Stagg EKG", "Stagg"],
+        "slug": "/go/staggekg",
+        "affiliateLink": "https://amzn.to/REPLACE-WITH-REAL-LINK",
+        "network": "amazon",
+        "shortDescription": "Variable-temperature gooseneck kettle designed specifically for pour over.",
+        "bestFor": "Brewers who want temperature precision and clean pour control",
+        "pros": [
+          "Variable temperature from 135 to 212 F in 1-degree increments",
+          "Hold function maintains temperature for 60 minutes",
+          "Counterweighted handle provides better pour control",
+          "Built-in brew stopwatch"
+        ],
+        "considerations": [
+          "Premium price relative to basic gooseneck kettles",
+          "1.0L capacity may be small for batches over 600ml"
+        ],
+        "verdict": "The Stagg EKG is the most-recommended pour over kettle for good reason. Pay for it once and stop debating water temperature for the next decade.",
+        "specificDetail": "The kettle heats 600ml to 200 F in under 4 minutes and holds within 1 degree for the duration of a typical pour."
+      },
+      {
+        "name": "Comandante C40 MK4 Hand Grinder",
+        "shortForms": ["Comandante C40", "Comandante"],
+        "slug": "/go/comandante",
+        "affiliateLink": "https://amzn.to/REPLACE-WITH-REAL-LINK",
+        "network": "amazon",
+        "shortDescription": "The reference hand grinder for pour over and filter brewing.",
+        "bestFor": "Pour over enthusiasts who prioritize grind quality over speed",
+        "pros": [
+          "Nitro-bladed steel burrs hold edge for years",
+          "Stepped adjustment with clear click-stops",
+          "Tight grind distribution at filter coffee settings",
+          "Compact and travel-friendly"
+        ],
+        "considerations": [
+          "Hand-cranked, not electric (60-90 seconds per 20g)",
+          "Significant cost relative to entry-level grinders"
+        ],
+        "verdict": "If grind quality is the bottleneck in your cup, the Comandante is the upgrade that stops mattering. Buy once.",
+        "specificDetail": "The C40 produces a tight unimodal grind distribution at filter settings, measurable as 5-10 percent fewer fines than entry-level conical burr grinders."
+      },
+      {
+        "name": "Chemex Six-Cup Classic",
+        "shortForms": ["Chemex"],
+        "slug": "/go/chemex",
+        "affiliateLink": "https://amzn.to/REPLACE-WITH-REAL-LINK",
+        "network": "amazon",
+        "shortDescription": "Iconic hourglass pour over decanter that serves as brewer and carafe.",
+        "bestFor": "Brewers serving 2-4 cups and those preferring lighter-bodied coffee",
+        "pros": [
+          "Combined brewer and serving carafe (no transfer step)",
+          "Thick paper filters produce a notably clean cup",
+          "Borosilicate glass is durable and easy to clean",
+          "Looks intentional on a counter or table"
+        ],
+        "considerations": [
+          "Requires Chemex-specific bonded filters",
+          "Glass is heavier than ceramic drippers"
+        ],
+        "verdict": "If you brew for two or more at once and want one vessel for the whole process, the Chemex is the answer.",
+        "specificDetail": "The filter is 20-30 percent thicker than V60 filters, which removes more oils and produces a tea-like clarity in the cup."
+      },
+      {
+        "name": "Origami Dripper",
+        "shortForms": ["Origami"],
+        "slug": "/go/origami",
+        "affiliateLink": "https://amzn.to/REPLACE-WITH-REAL-LINK",
+        "network": "amazon",
+        "shortDescription": "Pleated ceramic dripper compatible with both flat-bottom and cone filters.",
+        "bestFor": "Brewers who want flexibility across filter shapes",
+        "pros": [
+          "Accepts both V60 cone filters and Kalita Wave flat-bottom filters",
+          "20 ribs improve drainage and reduce stalling",
+          "Multiple ceramic colors and ceramic vs porcelain options",
+          "Used by world champion baristas"
+        ],
+        "considerations": [
+          "Requires separate stand or holder for serving",
+          "Premium price for what is structurally a dripper"
+        ],
+        "verdict": "The Origami is the right answer for brewers who want to experiment across filter shapes without buying two drippers.",
+        "specificDetail": "The 20 pleats create air channels between filter and dripper wall, which prevents the brew bed from collapsing into a tight clog."
+      },
+      {
+        "name": "Acaia Pearl Coffee Scale",
+        "shortForms": ["Acaia Pearl", "Acaia"],
+        "slug": "/go/acaiapearl",
+        "affiliateLink": "https://amzn.to/REPLACE-WITH-REAL-LINK",
+        "network": "amazon",
+        "shortDescription": "Bluetooth-connected coffee scale with brewing-specific timer modes.",
+        "bestFor": "Brewers tracking weight and time precisely across multiple recipes",
+        "pros": [
+          "0.1g resolution with 0.5 second response time",
+          "Built-in brewing modes with auto-tare and auto-start",
+          "Bluetooth pairs with brewing apps for recipe logging",
+          "Splash-proof finish for the wet brewing area"
+        ],
+        "considerations": [
+          "Battery operated (rechargeable, lasts about 30 hours)",
+          "Premium price relative to a basic kitchen scale"
+        ],
+        "verdict": "If you brew the same recipe trying to dial it in, the Acaia removes scale-induced variability and lets you focus on the actual variables.",
+        "specificDetail": "The 0.5 second response time means the scale registers your pour speed in real-time, unlike kitchen scales which lag by 1-2 seconds."
+      }
+    ]
+  },
+
+  "content": {
+    "researchScope": "pour over drippers, gooseneck kettles, burr grinders, brewing scales, water filtration, paper filter types",
+    "comparisonAxes": "budget, brew style, learning curve, cup profile, ease of cleaning",
+    "pickedItemNoun": "pour over setups",
+    "selectionCriteria": "real-world usability across skill levels, build quality, price-to-performance ratio, current availability, online tutorial and recipe support",
+    "nicheReviewItems": "filter compatibility, pour control, temperature stability, grind distribution at filter settings"
+  },
+
+  "riskTier": 3,
+  "tier1Fields": null,
+
+  "customRules": {
+    "enabled": [],
+    "disabled": []
+  }
+}
