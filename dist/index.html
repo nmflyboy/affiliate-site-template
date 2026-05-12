@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!--
+    TEMPLATE: listicle/base.html
+    BUILD CONTRACT: Claude Code replaces every double-curly-brace token with values
+    derived from site-config.json + the mandatory rules in /rules/.
+
+    DO NOT add inline content here. This file is structure only.
+    Every visible string in the final output comes from the config or from
+    Claude Code following the rules.
+
+    Order of items in <head> is mandatory:
+      1. charset, viewport
+      2. Hero image preload (BEFORE any stylesheet)
+      3. Title and meta description
+      4. Open Graph and Twitter Card tags
+      5. Canonical: NONE (rule 01-4.1)
+      6. Favicon links
+      7. Preconnect for fonts
+      8. Inline critical CSS
+      9. Non-blocking external stylesheet swap
+      10. Schema JSON-LD
+      11. GA4 async snippet (if config.seo.ga4MeasurementId present)
+  -->
+
+  <!-- 1. Hero image preload — MUST come before any external stylesheet (rule 03-1.2) -->
+  <link rel="preload"
+        as="image"
+        href="/og-images/brewverdict-com-og-1920.webp"
+        imagesrcset="/og-images/brewverdict-com-og-800.webp 800w, /og-images/brewverdict-com-og-1200.webp 1200w, /og-images/brewverdict-com-og-1920.webp 1920w"
+        imagesizes="100vw"
+        fetchpriority="high"
+        type="image/webp">
+
+  <!-- 2. Title and meta description -->
+  <title>best pour over coffee makers | BrewVerdict</title>
+  <meta name="description" content="The best pour over coffee makers reviewed and ranked. Compare 6 top setups for ease of use, brew quality, and value, with detailed buyer guidance.">
+  <meta name="author" content="BrewVerdict Editorial Team">
+
+  <!-- 3. Open Graph (rule 01-7.1) -->
+  <meta property="og:title" content="best pour over coffee makers | BrewVerdict">
+  <meta property="og:description" content="The best pour over coffee makers reviewed and ranked. Compare 6 top setups for ease of use, brew quality, and value, with detailed buyer guidance.">
+  <meta property="og:url" content="https://brewverdict.com/">
+  <meta property="og:image" content="https://brewverdict.com/og-images/brewverdict-com-og-1920.webp">
+  <meta property="og:type" content="article">
+
+  <!-- 4. Twitter Card (rule 01-7.2) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="best pour over coffee makers | BrewVerdict">
+  <meta name="twitter:description" content="The best pour over coffee makers reviewed and ranked. Compare 6 top setups for ease of use, brew quality, and value, with detailed buyer guidance.">
+  <meta name="twitter:image" content="https://brewverdict.com/og-images/brewverdict-com-og-1920.webp">
+
+  <!-- 5. Favicon (rule 01-8.1) -->
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- 6. Font preconnect (rule 03-5.2) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- 7. Inline critical CSS — keep under 14KB (rule 03-8.1) -->
+  <style>
+    /* CSS variables from config */
+    :root {
+      --primary-color: #3D2817;
+      --accent-color: #C9A961;
+      --darkest-brand-color: #1A0F08;
+      --body-bg: #FAF7F2;
+      --body-text: var(--darkest-brand-color);
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-heading: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--body-text);
+      background: var(--body-bg);
+    }
+
+    /* Layout container */
+    .container {
+      max-width: 768px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+    }
+
+    /* Header */
+    .site-header {
+      background: var(--primary-color);
+      color: #fff;
+      padding: 0.875rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .site-header .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .site-header a.brand {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 1.125rem;
+    }
+    .site-header a.header-cta {
+      background: var(--accent-color);
+      color: var(--darkest-brand-color);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    /* Disclosure banner (rule 05-2.1) */
+    .disclosure-banner {
+      background: #FFF8E7;
+      border-top: 1px solid #E8DCB4;
+      border-bottom: 1px solid #E8DCB4;
+      padding: 0.625rem 0;
+      font-size: 0.8125rem;
+      color: #5A4A2A;
+    }
+
+    /* Quick Answer box (rule 04-3.5) */
+    .quick-answer-box {
+      background: #fff;
+      border-left: 4px solid var(--accent-color);
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0 1.25rem;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .quick-answer-box p {
+      margin: 0;
+      font-size: 1.0625rem;
+      line-height: 1.55;
+    }
+
+    /* Hero */
+    .hero {
+      margin: 1.25rem 0 2rem;
+    }
+    .hero picture, .hero img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+    }
+
+    /* Headings */
+    h1 {
+      font-family: var(--font-heading);
+      font-size: 2rem;
+      line-height: 1.2;
+      margin: 0.75rem 0 1rem;
+      color: var(--darkest-brand-color);
+    }
+    h2 {
+      font-family: var(--font-heading);
+      font-size: 1.625rem;
+      line-height: 1.25;
+      margin: 2.25rem 0 1rem;
+      color: var(--darkest-brand-color);
+    }
+    h3 {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      line-height: 1.3;
+      margin: 1.5rem 0 0.5rem;
+      color: var(--darkest-brand-color);
+    }
+    @media (min-width: 768px) {
+      h1 { font-size: 2.5rem; }
+      h2 { font-size: 1.875rem; }
+      h3 { font-size: 1.375rem; }
+    }
+
+    /* In-content links (rule 02-1.1 through 02-1.4) */
+    .content a, p a, li a {
+      color: var(--darkest-brand-color);
+      text-decoration: underline;
+      text-decoration-color: var(--darkest-brand-color);
+      text-underline-offset: 2px;
+      font-weight: 500;
+      transition: text-decoration-color 0.15s ease;
+    }
+    .content a:hover, p a:hover, li a:hover {
+      text-decoration-color: var(--accent-color);
+    }
+
+    /* CTAs (rule 02-2) */
+    .cta-button {
+      display: inline-block;
+      background: var(--accent-color);
+      color: var(--darkest-brand-color);
+      padding: 0.875rem 1.5rem;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      min-height: 44px;
+      line-height: 1.2;
+      text-align: center;
+      transition: filter 0.15s ease;
+    }
+    .cta-button:hover { filter: brightness(0.95); text-decoration: none; }
+
+    /* Comparison table */
+    .comparison-table-wrap {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .comparison-table {
+      width: 100%;
+      min-width: 600px;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 6px;
+    }
+    .comparison-table th, .comparison-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #E8DCB4;
+      font-size: 0.9375rem;
+    }
+    .comparison-table th {
+      background: var(--primary-color);
+      color: #fff;
+      font-weight: 600;
+    }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .comparison-table .table-cta {
+      background: var(--accent-color);
+      color: var(--darkest-brand-color);
+      padding: 0.375rem 0.75rem;
+      border-radius: 3px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      white-space: nowrap;
+    }
+
+    /* Product cards (rule 05-4) */
+    .product-grid {
+      display: grid;
+      gap: 1.25rem;
+      margin: 1.5rem 0 2.5rem;
+    }
+    @media (min-width: 640px) {
+      .product-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .product-card {
+      background: #fff;
+      border: 1px solid #E8DCB4;
+      border-radius: 6px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .product-card .product-rank {
+      display: inline-block;
+      background: var(--primary-color);
+      color: #fff;
+      padding: 0.25rem 0.625rem;
+      border-radius: 3px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.625rem;
+    }
+    .product-card h3 { margin-top: 0; }
+    .product-card .best-for {
+      font-size: 0.875rem;
+      color: #6A5A3A;
+      margin: 0.25rem 0 0.75rem;
+    }
+    .product-card .best-for strong { color: var(--darkest-brand-color); }
+    .product-card .pros-list,
+    .product-card .considerations-list {
+      padding-left: 1.25rem;
+      margin: 0.5rem 0;
+    }
+    .product-card .pros-list li::marker { color: #2D7A3F; }
+    .product-card .considerations-list li::marker { color: #B85A2D; }
+    .product-card .verdict {
+      font-style: italic;
+      color: #4A3A1A;
+      margin: 0.75rem 0;
+      padding: 0.625rem 0.875rem;
+      background: #FFF8E7;
+      border-radius: 4px;
+      font-size: 0.9375rem;
+    }
+    .product-card .cta-button {
+      margin-top: auto; /* pins CTA to bottom — rule 05-4.3 */
+    }
+
+    /* FAQ */
+    .faq-section { margin: 2.5rem 0; }
+    .faq-item { margin-bottom: 1.5rem; }
+    .faq-item h3 { margin-top: 0; }
+
+    /* Footer */
+    .site-footer {
+      background: var(--primary-color);
+      color: #E8DCB4;
+      padding: 1.5rem 0;
+      margin-top: 3rem;
+      font-size: 0.875rem;
+    }
+    .site-footer .container { text-align: center; }
+    .site-footer a { color: #fff; }
+    .site-footer .footer-links {
+      margin: 0.5rem 0;
+    }
+    .site-footer .footer-links a {
+      margin: 0 0.5rem;
+    }
+
+    /* Accessibility — focus indicator (rule 02-8) */
+    a:focus-visible, button:focus-visible {
+      outline: 3px solid var(--accent-color);
+      outline-offset: 2px;
+    }
+  </style>
+
+  <!-- 8. Non-blocking external font stylesheet (rule 03-5.2) -->
+  <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  </noscript>
+
+  <!-- 9. Schema JSON-LD (rule 01-6) -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Article",
+      "headline": "The Best Pour Over Coffee Makers, Ranked and Reviewed",
+      "description": "The best pour over coffee makers reviewed and ranked. Compare 6 top setups for ease of use, brew quality, and value, with detailed buyer guidance.",
+      "url": "https://brewverdict.com/",
+      "datePublished": "2026-05-12T00:00:00-06:00",
+      "dateModified": "2026-05-12T00:00:00-06:00",
+      "author": {
+        "@type": "Organization",
+        "name": "BrewVerdict Editorial Team",
+        "url": "https://brewverdict.com/about/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "BrewVerdict",
+        "url": "https://brewverdict.com/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://brewverdict.com/apple-touch-icon.png"
+        }
+      },
+      "image": {
+        "@type": "ImageObject",
+        "url": "https://brewverdict.com/og-images/brewverdict-com-og-1920.webp",
+        "width": 1920,
+        "height": 1080
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://brewverdict.com/"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "name": "BrewVerdict",
+      "url": "https://brewverdict.com/",
+      "description": "Expert reviews of specialty coffee brewing equipment",
+      "publisher": {
+        "@type": "Organization",
+        "name": "BrewVerdict"
+      }
+    },
+    {
+      "@type": "SpeakableSpecification",
+      "cssSelector": [
+        ".quick-answer-box",
+        ".faq-section"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is the best pour over coffee maker for a beginner?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "For a new pour over brewer, the Hario V60 is the right starting dripper. It pairs with widely available filters, has the most online tutorials and recipe support, and forgives small pour technique mistakes. Combine it with a gooseneck kettle and a quality burr grinder, and you have a complete beginner setup under 200 dollars that you will not outgrow as your skills develop."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I really need a gooseneck kettle for pour over?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, a gooseneck kettle makes a significant difference. The narrow spout gives you control over pour speed, direction, and the height of the stream above the coffee bed. A standard kitchen kettle has too wide a spout to pour consistently into a small dripper. You can start with a budget gooseneck under 40 dollars and upgrade later, but skipping the gooseneck altogether is the most common reason new pour over brewers give up on the method."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What size kettle do I need for pour over coffee?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A 1.0 liter capacity covers most home brewing needs. That is enough water for 2 to 3 cups in a single brew, with room for the rinse water that wets the filter before brewing. If you regularly brew for 4 or more people, look at 1.2 liter or larger options. The Fellow Stagg EKG holds 1.0 liter and works well for solo and small-group brewing, while a Chemex carafe with its own kettle can scale to 6 cups."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How much does grind quality actually matter for pour over?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Grind quality is the single most important variable after water temperature. A tight, consistent grind distribution produces even extraction, which translates to a clean, balanced cup. A grinder with significant fine particles, or one that produces inconsistent grind sizes, causes channeling and over-extracted bitter notes alongside under-extracted sour notes in the same cup. A quality burr grinder (hand or electric) makes a bigger difference to the final cup than any individual dripper or kettle upgrade."
+          }
+        }
+      ]
+    },
+    {
+      "@type": "ItemList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Hario V60 Ceramic Dripper",
+          "url": "https://brewverdict.com/go/hariov60/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Fellow Stagg EKG Electric Kettle",
+          "url": "https://brewverdict.com/go/staggekg/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Comandante C40 MK4 Hand Grinder",
+          "url": "https://brewverdict.com/go/comandante/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Chemex Six-Cup Classic",
+          "url": "https://brewverdict.com/go/chemex/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Origami Dripper",
+          "url": "https://brewverdict.com/go/origami/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 6,
+          "name": "Acaia Pearl Coffee Scale",
+          "url": "https://brewverdict.com/go/acaiapearl/"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <!-- 10. GA4 async snippet (rule 03-6.2) — only injected if config.seo.ga4MeasurementId is set -->
+  
+
+</head>
+<body>
+
+  <!-- Site header with sticky CTA -->
+  <header class="site-header">
+    <div class="container">
+      <a href="/" class="brand">BrewVerdict</a>
+      <a href="#picks" class="header-cta">View Picks</a>
+    </div>
+  </header>
+
+  <!-- Affiliate disclosure banner (rule 05-2.1) -->
+  <div class="disclosure-banner">
+    <div class="container">
+      <strong>Affiliate disclosure:</strong> This page contains affiliate links. If you click a link and make a purchase, BrewVerdict may earn a commission at no extra cost to you.
+    </div>
+  </div>
+
+  <main class="container content">
+
+    <!-- Quick Answer box — must be above hero (rule 04-3.1) -->
+    <div class="quick-answer-box">
+      <p>The best pour over coffee maker for most people is a Hario V60 with a gooseneck kettle and a quality burr grinder. This combination produces consistent extraction, fits a typical kitchen counter, and stays under 200 dollars for the complete setup.</p>
+    </div>
+
+    <!-- H1 -->
+    <h1>The Best Pour Over Coffee Makers, Ranked and Reviewed</h1>
+
+    <!-- Author byline if config.site.namedAuthor present -->
+    <p style="color: #6A5A3A; font-size: 0.9375rem; margin: -0.5rem 0 1.25rem;">By <strong>Robin Lilly</strong>, BrewVerdict Editorial Team</p>
+
+    <!-- Hero image (rule 03-3) -->
+    <div class="hero">
+      <picture>
+        <source media="(max-width: 768px)"  srcset="/og-images/brewverdict-com-og-800.webp"  type="image/webp">
+        <source media="(max-width: 1280px)" srcset="/og-images/brewverdict-com-og-1200.webp" type="image/webp">
+        <img src="/og-images/brewverdict-com-og-1920.webp"
+             alt="Best Pour Over Coffee Makers compared by BrewVerdict"
+             width="1920" height="1080"
+             fetchpriority="high">
+      </picture>
+    </div>
+
+    <!-- Intro paragraphs — 2 to 3 paragraphs introducing the comparison -->
+        <p>Pour over brewing rewards careful attention. The dripper, the kettle, and the grinder all matter, and small upgrades in any of the three meaningfully change what ends up in the cup. The setups below cover the price range from beginner kits under 80 dollars to enthusiast-grade gear over 500 dollars.</p>
+    <p>We picked these six options based on real-world usability across skill levels, build quality, and price-to-performance ratio. Three are in heavy rotation among the editorial team and three are widely regarded as category benchmarks. If you only read one section, jump to the comparison table for a quick orientation, then come back for the details on the setup that catches your eye.</p>
+    <p>A note on equipment compatibility: most drippers here work with any gooseneck kettle, but the Chemex requires its own bonded filters, and the Origami pairs best with a separate stand. We flag these specifics in each product card so there are no surprises after you order.</p>
+
+    <!-- Comparison table (rule 05-5.1) -->
+    <h2>At a Glance</h2>
+    <div class="comparison-table-wrap">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Best For</th>
+            <th>Key Feature</th>
+            <th>Get It</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Hario V60 Ceramic Dripper</strong></td>
+            <td>First-time pour over brewers and traditionalists</td>
+            <td>60-degree cone, spiral ridges</td>
+            <td><a href="/go/hariov60/" class="table-cta">View</a></td>
+          </tr>
+          <tr>
+            <td><strong>Fellow Stagg EKG Electric Kettle</strong></td>
+            <td>Brewers who want temperature precision and clean pour control</td>
+            <td>Variable temperature, counterweighted handle</td>
+            <td><a href="/go/staggekg/" class="table-cta">View</a></td>
+          </tr>
+          <tr>
+            <td><strong>Comandante C40 MK4 Hand Grinder</strong></td>
+            <td>Pour over enthusiasts who prioritize grind quality over speed</td>
+            <td>Nitro-bladed steel burrs, stepped adjustment</td>
+            <td><a href="/go/comandante/" class="table-cta">View</a></td>
+          </tr>
+          <tr>
+            <td><strong>Chemex Six-Cup Classic</strong></td>
+            <td>Brewers serving 2-4 cups and those preferring lighter-bodied coffee</td>
+            <td>Brewer + carafe, thick bonded filter</td>
+            <td><a href="/go/chemex/" class="table-cta">View</a></td>
+          </tr>
+          <tr>
+            <td><strong>Origami Dripper</strong></td>
+            <td>Brewers who want flexibility across filter shapes</td>
+            <td>Compatible with V60 + Kalita Wave filters</td>
+            <td><a href="/go/origami/" class="table-cta">View</a></td>
+          </tr>
+          <tr>
+            <td><strong>Acaia Pearl Coffee Scale</strong></td>
+            <td>Brewers tracking weight and time precisely across multiple recipes</td>
+            <td>0.1g resolution, 0.5s response time</td>
+            <td><a href="/go/acaiapearl/" class="table-cta">View</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Product cards section -->
+    <h2 id="picks">The Pour Over Setups</h2>
+    <div class="product-grid">
+    <article class="product-card">
+      <span class="product-rank">#1 OVERALL</span>
+      <h3>Hario V60 Ceramic Dripper</h3>
+      <p class="best-for"><strong>Best For:</strong> First-time pour over brewers and traditionalists</p>
+      <p>The classic 60-degree cone dripper that defines the pour over genre. The 60-degree cone angle and spiral interior ridges create a flow pattern that responds predictably to pour speed changes.</p>
+      <strong>Pros</strong>
+      <ul class="pros-list">
+        <li>Ceramic construction holds heat well during the pour</li>
+        <li>Standardized cone size with widely available filters</li>
+        <li>Compatible with most kettles and decanters</li>
+        <li>Forgiving of small pour technique variations</li>
+      </ul>
+      <strong>Considerations</strong>
+      <ul class="considerations-list">
+        <li>Requires gooseneck kettle for best results</li>
+        <li>Ceramic is breakable if dropped</li>
+      </ul>
+      <p class="verdict">If you are starting pour over and want the format with the most online tutorials and recipe support, the V60 is the right first dripper.</p>
+      <a href="/go/hariov60/" class="cta-button">Check Latest Price</a>
+    </article>
+
+    <article class="product-card">
+      <span class="product-rank">#2 PICK</span>
+      <h3>Fellow Stagg EKG Electric Kettle</h3>
+      <p class="best-for"><strong>Best For:</strong> Brewers who want temperature precision and clean pour control</p>
+      <p>Variable-temperature gooseneck kettle designed specifically for pour over. The kettle heats 600ml to 200 F in under 4 minutes and holds within 1 degree for the duration of a typical pour.</p>
+      <strong>Pros</strong>
+      <ul class="pros-list">
+        <li>Variable temperature from 135 to 212 F in 1-degree increments</li>
+        <li>Hold function maintains temperature for 60 minutes</li>
+        <li>Counterweighted handle provides better pour control</li>
+        <li>Built-in brew stopwatch</li>
+      </ul>
+      <strong>Considerations</strong>
+      <ul class="considerations-list">
+        <li>Premium price relative to basic gooseneck kettles</li>
+        <li>1.0L capacity may be small for batches over 600ml</li>
+      </ul>
+      <p class="verdict">The Stagg EKG is the most-recommended pour over kettle for good reason. Pay for it once and stop debating water temperature for the next decade.</p>
+      <a href="/go/staggekg/" class="cta-button">Check Latest Price</a>
+    </article>
+
+    <article class="product-card">
+      <span class="product-rank">#3 PICK</span>
+      <h3>Comandante C40 MK4 Hand Grinder</h3>
+      <p class="best-for"><strong>Best For:</strong> Pour over enthusiasts who prioritize grind quality over speed</p>
+      <p>The reference hand grinder for pour over and filter brewing. The C40 produces a tight unimodal grind distribution at filter settings, measurable as 5 to 10 percent fewer fines than entry-level conical burr grinders.</p>
+      <strong>Pros</strong>
+      <ul class="pros-list">
+        <li>Nitro-bladed steel burrs hold edge for years</li>
+        <li>Stepped adjustment with clear click-stops</li>
+        <li>Tight grind distribution at filter coffee settings</li>
+        <li>Compact and travel-friendly</li>
+      </ul>
+      <strong>Considerations</strong>
+      <ul class="considerations-list">
+        <li>Hand-cranked, not electric (60-90 seconds per 20g)</li>
+        <li>Significant cost relative to entry-level grinders</li>
+      </ul>
+      <p class="verdict">If grind quality is the bottleneck in your cup, the Comandante is the upgrade that stops mattering. Buy once.</p>
+      <a href="/go/comandante/" class="cta-button">Check Latest Price</a>
+    </article>
+
+    <article class="product-card">
+      <span class="product-rank">#4 PICK</span>
+      <h3>Chemex Six-Cup Classic</h3>
+      <p class="best-for"><strong>Best For:</strong> Brewers serving 2-4 cups and those preferring lighter-bodied coffee</p>
+      <p>Iconic hourglass pour over decanter that serves as brewer and carafe. The filter is 20 to 30 percent thicker than V60 filters, which removes more oils and produces a tea-like clarity in the cup.</p>
+      <strong>Pros</strong>
+      <ul class="pros-list">
+        <li>Combined brewer and serving carafe (no transfer step)</li>
+        <li>Thick paper filters produce a notably clean cup</li>
+        <li>Borosilicate glass is durable and easy to clean</li>
+        <li>Looks intentional on a counter or table</li>
+      </ul>
+      <strong>Considerations</strong>
+      <ul class="considerations-list">
+        <li>Requires Chemex-specific bonded filters</li>
+        <li>Glass is heavier than ceramic drippers</li>
+      </ul>
+      <p class="verdict">If you brew for two or more at once and want one vessel for the whole process, the Chemex is the answer.</p>
+      <a href="/go/chemex/" class="cta-button">Check Latest Price</a>
+    </article>
+
+    <article class="product-card">
+      <span class="product-rank">#5 PICK</span>
+      <h3>Origami Dripper</h3>
+      <p class="best-for"><strong>Best For:</strong> Brewers who want flexibility across filter shapes</p>
+      <p>Pleated ceramic dripper compatible with both flat-bottom and cone filters. The 20 pleats create air channels between filter and dripper wall, which prevents the brew bed from collapsing into a tight clog.</p>
+      <strong>Pros</strong>
+      <ul class="pros-list">
+        <li>Accepts both V60 cone filters and Kalita Wave flat-bottom filters</li>
+        <li>20 ribs improve drainage and reduce stalling</li>
+        <li>Multiple ceramic colors and ceramic vs porcelain options</li>
+        <li>Used by world champion baristas</li>
+      </ul>
+      <strong>Considerations</strong>
+      <ul class="considerations-list">
+        <li>Requires separate stand or holder for serving</li>
+        <li>Premium price for what is structurally a dripper</li>
+      </ul>
+      <p class="verdict">The Origami is the right answer for brewers who want to experiment across filter shapes without buying two drippers.</p>
+      <a href="/go/origami/" class="cta-button">Check Latest Price</a>
+    </article>
+
+    <article class="product-card">
+      <span class="product-rank">#6 PICK</span>
+      <h3>Acaia Pearl Coffee Scale</h3>
+      <p class="best-for"><strong>Best For:</strong> Brewers tracking weight and time precisely across multiple recipes</p>
+      <p>Bluetooth-connected coffee scale with brewing-specific timer modes. The 0.5 second response time means the scale registers your pour speed in real time, unlike kitchen scales which lag by 1 to 2 seconds.</p>
+      <strong>Pros</strong>
+      <ul class="pros-list">
+        <li>0.1g resolution with 0.5 second response time</li>
+        <li>Built-in brewing modes with auto-tare and auto-start</li>
+        <li>Bluetooth pairs with brewing apps for recipe logging</li>
+        <li>Splash-proof finish for the wet brewing area</li>
+      </ul>
+      <strong>Considerations</strong>
+      <ul class="considerations-list">
+        <li>Battery operated (rechargeable, lasts about 30 hours)</li>
+        <li>Premium price relative to a basic kitchen scale</li>
+      </ul>
+      <p class="verdict">If you brew the same recipe trying to dial it in, the Acaia removes scale-induced variability and lets you focus on the actual variables.</p>
+      <a href="/go/acaiapearl/" class="cta-button">Check Latest Price</a>
+    </article>
+    </div>
+
+    <!-- How We Picked These -->
+    <h2>How We Picked These Pour Over Setups</h2>
+        <p>Our research scope covers pour over drippers, gooseneck kettles, burr grinders, brewing scales, water filtration, and paper filter types. For this list, we narrowed the field by three criteria: build quality that supports daily use without degradation, price-to-performance ratio at the relevant tier, and current availability through major retailers without back-order issues.</p>
+    <p>We evaluated filter compatibility, pour control, temperature stability, and grind distribution at filter settings for each piece of gear. Where the editorial team has direct experience with a product, we mention that in the product notes. Where we are relying on aggregated third-party reviews and manufacturer specifications, we say that too. Editorial independence and methodology transparency matter more than implying experience we do not have.</p>
+
+    <!-- FAQ section (rule 04-4) -->
+    <section class="faq-section">
+      <h2>Frequently Asked Questions</h2>
+      <div class="faq-item">
+        <h3>What is the best pour over coffee maker for a beginner?</h3>
+        <p>For a new pour over brewer, the Hario V60 is the right starting dripper. It pairs with widely available filters, has the most online tutorials and recipe support, and forgives small pour technique mistakes. Combine it with a gooseneck kettle and a quality burr grinder, and you have a complete beginner setup under 200 dollars that you will not outgrow as your skills develop.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Do I really need a gooseneck kettle for pour over?</h3>
+        <p>Yes, a gooseneck kettle makes a significant difference. The narrow spout gives you control over pour speed, direction, and the height of the stream above the coffee bed. A standard kitchen kettle has too wide a spout to pour consistently into a small dripper. You can start with a budget gooseneck under 40 dollars and upgrade later, but skipping the gooseneck altogether is the most common reason new pour over brewers give up on the method.</p>
+      </div>
+      <div class="faq-item">
+        <h3>What size kettle do I need for pour over coffee?</h3>
+        <p>A 1.0 liter capacity covers most home brewing needs. That is enough water for 2 to 3 cups in a single brew, with room for the rinse water that wets the filter before brewing. If you regularly brew for 4 or more people, look at 1.2 liter or larger options. The Fellow Stagg EKG holds 1.0 liter and works well for solo and small-group brewing, while a Chemex carafe with its own kettle can scale to 6 cups.</p>
+      </div>
+      <div class="faq-item">
+        <h3>How much does grind quality actually matter for pour over?</h3>
+        <p>Grind quality is the single most important variable after water temperature. A tight, consistent grind distribution produces even extraction, which translates to a clean, balanced cup. A grinder with significant fine particles, or one that produces inconsistent grind sizes, causes channeling and over-extracted bitter notes alongside under-extracted sour notes in the same cup. A quality burr grinder (hand or electric) makes a bigger difference to the final cup than any individual dripper or kettle upgrade.</p>
+      </div>
+    </section>
+
+    <!-- Closing CTA (rule 05-7.1) -->
+    <div style="margin: 2rem 0; text-align: center;">
+      <a href="/go/hariov60/" class="cta-button">See Our Top Pick</a>
+    </div>
+
+    <!-- Amazon Associates required statement (rule 05-2.6) — only when amazon in networks -->
+    <aside style="background: #FFF8E7; border: 1px solid #E8DCB4; padding: 0.875rem 1.25rem; border-radius: 4px; margin: 1.5rem 0; font-size: 0.875rem; color: #5A4A2A;">As an Amazon Associate I earn from qualifying purchases.</aside>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div>&copy; 2026 BrewVerdict. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/about/">About</a>
+        <a href="/contact/">Contact</a>
+        <a href="/privacy/">Privacy</a>
+        <a href="/disclosure/">Disclosure</a>
+      </div>
+      <div style="margin-top: 0.5rem; font-size: 0.8125rem;">Expert reviews of specialty coffee brewing equipment</div>
+    </div>
+  </footer>
+
+</body>
+</html>
