@@ -701,6 +701,34 @@ ${config.affiliate.networks.includes('amazon') ? `      <h2>Amazon Associates</h
 }
 
 // ---------------------------------------------------------------------------
+// Step 8b: build 404.html (rule 01-15)
+// ---------------------------------------------------------------------------
+
+async function build404Page(config, distDir) {
+  // Rule 01-15: every site must have a 404.html at deploy root so the hosting
+  // platform returns proper HTTP 404 instead of falling back to index.html
+  // with HTTP 200. This is the most common Cloudflare Pages deployment bug.
+
+  const templatePath = path.join(REPO_ROOT, 'templates', '404.html');
+  let template;
+  try {
+    template = await fs.readFile(templatePath, 'utf8');
+  } catch (err) {
+    die(`Cannot read 404 template at ${templatePath}: ${err.message}`);
+  }
+
+  const rendered = applyTemplate(template, {
+    BRAND_NAME: escapeHtml(config.site.brandName),
+    PRIMARY_COLOR: config.design.primaryColor,
+    ACCENT_COLOR: config.design.accentColor,
+    DARKEST_BRAND_COLOR: config.design.darkestBrandColor,
+  });
+
+  await fs.writeFile(path.join(distDir, '404.html'), rendered, 'utf8');
+  log(`  OK    Wrote 404.html`, 'green');
+}
+
+// ---------------------------------------------------------------------------
 // Step 9: build robots.txt, sitemap.xml, IndexNow key file
 // ---------------------------------------------------------------------------
 
@@ -783,20 +811,20 @@ async function main() {
   console.log('');
 
   // Step 1: load and validate config
-  log('Step 1/8: Validating config', 'bold');
+  log('Step 1/9: Validating config', 'bold');
   const config = await loadConfig(configPath);
   await validateConfigShape(config);
 
   // Step 2: load content
-  log('Step 2/8: Loading content', 'bold');
+  log('Step 2/9: Loading content', 'bold');
   const content = await loadContent(contentPath);
 
   // Step 3: identify applicable rules
-  log('Step 3/8: Identifying applicable rules', 'bold');
+  log('Step 3/9: Identifying applicable rules', 'bold');
   await loadApplicableRules(config);
 
   // Step 4: clean and re-create dist
-  log('Step 4/8: Preparing dist/', 'bold');
+  log('Step 4/9: Preparing dist/', 'bold');
   try {
     await fs.rm(distDir, { recursive: true, force: true });
   } catch (err) {
@@ -806,19 +834,23 @@ async function main() {
   log('  OK    dist/ ready', 'green');
 
   // Step 5: build main page
-  log('Step 5/8: Building main page', 'bold');
+  log('Step 5/9: Building main page', 'bold');
   await buildMainPage(config, content, distDir);
 
   // Step 6: build /go/ redirects
-  log('Step 6/8: Building /go/ redirect files', 'bold');
+  log('Step 6/9: Building /go/ redirect files', 'bold');
   await buildGoRedirects(config, distDir);
 
   // Step 7: build subpages
-  log('Step 7/8: Building subpages', 'bold');
+  log('Step 7/9: Building subpages', 'bold');
   await buildSubpages(config, content, distDir);
 
-  // Step 8: robots, sitemap, indexnow, public assets
-  log('Step 8/8: Writing robots.txt, sitemap.xml, IndexNow key, copying public/', 'bold');
+  // Step 8: build 404 page (rule 01-15)
+  log('Step 8/9: Building 404 page', 'bold');
+  await build404Page(config, distDir);
+
+  // Step 9: robots, sitemap, indexnow, public assets
+  log('Step 9/9: Writing robots.txt, sitemap.xml, IndexNow key, copying public/', 'bold');
   await buildRobotsAndSitemap(config, distDir);
   await copyPublicAssets(distDir);
 

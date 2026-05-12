@@ -409,6 +409,42 @@ async function checkSubpages(distDir) {
   }
 }
 
+async function check404Page(distDir, config) {
+  // Rule 01-15: 404.html must exist at deploy root with noindex meta and a home link
+  const filePath = path.join(distDir, '404.html');
+  let content;
+  try {
+    content = await fs.readFile(filePath, 'utf8');
+    recordCheck('01-15.1', 'MUST', '404.html exists at deploy root', true);
+  } catch {
+    recordCheck('01-15.1', 'MUST', '404.html exists at deploy root', false);
+    return;
+  }
+
+  // Rule 01-15.3: must include noindex meta
+  const hasNoindex = /<meta\s+name=["']robots["']\s+content=["'][^"']*noindex[^"']*["']/i.test(content);
+  recordCheck('01-15.3', 'MUST', '404.html has noindex meta', hasNoindex);
+
+  // Rule 01-15.4: must include link to /
+  const hasHomeLink = /<a[^>]*href=["']\/["']/i.test(content);
+  recordCheck('01-15.4', 'MUST', '404.html links to homepage /', hasHomeLink);
+
+  // Rule 01-15.6: must NOT include affiliate links or product CTAs
+  const has404GoLink = /href=["'][^"']*\/go\//i.test(content);
+  recordCheck('01-15.6', 'MUST', '404.html has no /go/ affiliate redirects', !has404GoLink);
+
+  // Check for any product names from config appearing as links (basic check)
+  let hasProductLink = false;
+  for (const product of config.affiliate.products || []) {
+    const slug = product.slug;
+    if (content.includes(`href="${slug}/"`) || content.includes(`href='${slug}/'`)) {
+      hasProductLink = true;
+      break;
+    }
+  }
+  recordCheck('01-15.6', 'MUST', '404.html has no product CTAs', !hasProductLink);
+}
+
 function checkAmazonStatement(html, config) {
   if (!config.affiliate.networks.includes('amazon')) return;
   const required = 'As an Amazon Associate I earn from qualifying purchases';
@@ -488,6 +524,7 @@ async function main() {
   await checkSitemap(distDir, config);
   await checkIndexNowKeyFile(distDir, config);
   await checkSubpages(distDir);
+  await check404Page(distDir, config);
 
   // Summary
   console.log('');

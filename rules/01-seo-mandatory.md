@@ -170,6 +170,22 @@ Sitemap: https://[domain]/sitemap.xml
 
 **14.2** When `template.type === 'leadgen'`, the disclosure subpage MAY be omitted if no affiliate links exist on the site.
 
+### 15. 404 not-found page
+
+**15.1** Every site MUST have a `404.html` file at the deploy root (`dist/404.html` after build).
+
+**15.2** The `404.html` page exists so the hosting platform (Cloudflare Pages) returns proper HTTP 404 status for unknown paths instead of falling back to `index.html` with HTTP 200. Without this file, every unknown URL serves the homepage with a 200 response, which confuses search engines and creates duplicate-content issues.
+
+**15.3** The 404 page MUST include `<meta name="robots" content="noindex, nofollow">` in the `<head>` so search engines do not index the error page itself.
+
+**15.4** The 404 page MUST include a link back to the site homepage (`/`).
+
+**15.5** The 404 page SHOULD use the same brand colors and typography as the rest of the site, but MAY be a minimal layout (no header, no footer, no comparison table, no schema). Its job is to confirm to the visitor that they reached a real error page, not get lost.
+
+**15.6** The 404 page MUST NOT include affiliate links or product CTAs. Sending a confused visitor toward a purchase is poor UX and may run afoul of FTC clarity expectations.
+
+**15.7** Verification: after deployment, requesting any non-existent path (e.g. `https://[domain]/intentionally-nonexistent-path-test`) MUST return HTTP 404 status (verifiable in browser DevTools Network tab), NOT HTTP 200. This is the single most important verification step for Cloudflare Pages deployments because the platform default falls back to index.html with 200 when 404.html is absent.
+
 ## Examples
 
 ### Correct title and meta description
@@ -230,9 +246,12 @@ After generating a site, Claude Code MUST verify:
 13. `public/[indexNowKey].txt` exists and contains the key value
 14. Body content word count ≥ 1500
 15. Subpages `/about/`, `/contact/`, `/privacy/`, `/disclosure/` exist
+16. `dist/404.html` exists, contains `<meta name="robots" content="noindex, nofollow">`, and includes a link to `/`
+17. `dist/404.html` does NOT contain any `/go/` redirect URLs or affiliate links (no product CTAs on the error page)
 
 If any check fails, the build is incomplete. Report the failure with the specific check number and the file or selector where the violation occurred.
 
 ## Source / version history
 
 - 2026-05-12 — Initial creation. Compiled from v3.2 Phase 1 SEO requirements, Phase 4 schema template, and Phase 3 post-launch checklist. Incorporates HydroVerdict and FairwayVerdict launch learnings.
+- 2026-05-12 — Added section 15 (404 not-found page) and validation checks 16-17. Cloudflare Pages defaults to falling back to index.html with HTTP 200 when 404.html is absent, replicating the v3.2 Lovable Cloud bug. The 404.html file forces correct HTTP 404 status.

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Not Found | {{BRAND_NAME}}</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <style>
+    :root {
+      --primary-color: {{PRIMARY_COLOR}};
+      --accent-color: {{ACCENT_COLOR}};
+      --darkest-brand-color: {{DARKEST_BRAND_COLOR}};
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--darkest-brand-color);
+      background: #FAF7F2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.25rem;
+    }
+    .container {
+      max-width: 480px;
+      text-align: center;
+    }
+    .error-code {
+      font-size: 5rem;
+      font-weight: 700;
+      line-height: 1;
+      margin: 0 0 0.5rem;
+      color: var(--primary-color);
+    }
+    h1 {
+      font-size: 1.75rem;
+      margin: 0 0 1rem;
+      color: var(--darkest-brand-color);
+    }
+    p {
+      font-size: 1.0625rem;
+      margin: 0 0 1.5rem;
+      color: #4A3A1A;
+    }
+    a.home-link {
+      display: inline-block;
+      color: var(--darkest-brand-color);
+      text-decoration: underline;
+      text-decoration-color: var(--darkest-brand-color);
+      text-underline-offset: 2px;
+      font-weight: 500;
+      transition: text-decoration-color 0.15s ease;
+    }
+    a.home-link:hover {
+      text-decoration-color: var(--accent-color);
+    }
+    a:focus-visible {
+      outline: 3px solid var(--accent-color);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="error-code">404</div>
+    <h1>Page not found</h1>
+    <p>The page you were looking for doesn't exist or has been moved.</p>
+    <p><a href="/" class="home-link">Return to the {{BRAND_NAME}} homepage</a></p>
+  </div>
+</body>
+</html>
