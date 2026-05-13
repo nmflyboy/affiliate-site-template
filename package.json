@@ -1,0 +1,23 @@
+{
+  "name": "affiliate-site-template",
+  "version": "1.0.0",
+  "description": "Static affiliate site factory: rules-driven build, Imagen-powered images, Cloudflare Pages deploy.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-site.mjs",
+    "validate": "node scripts/validate-output.mjs",
+    "images": "node scripts/generate-images.mjs",
+    "images:force": "node scripts/generate-images.mjs --force",
+    "images:hero": "node scripts/generate-images.mjs --hero-only",
+    "images:favicon": "node scripts/generate-images.mjs --favicon-only"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@google/genai": "^2.2.0",
+    "dotenv": "^17.4.2",
+    "sharp": "^0.34.5"
+  }
+}
