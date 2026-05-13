@@ -4,22 +4,18 @@ How the factory handles hero images and favicons.
 
 ## Workflow at a glance
 
-The factory uses a **two-step manual-plus-script workflow** that uses your existing ChatGPT Plus, Gemini Advanced, or Grok subscription. No API keys, no billing setup, no per-image costs.
+The factory uses a **manual-plus-script workflow** that uses your existing ChatGPT Plus, Gemini Advanced, or Grok subscription for hero images, and one of three script-based approaches for favicons. No API keys required for the AI image generation. No billing setup.
 
 Per site:
 
-1. Run `node scripts/generate-images.mjs --prompt-only` (1 second). Prints two prompts (hero + favicon) tailored to the site's niche and brand colors, AND saves them to a text file for reference.
-2. Copy the hero prompt into ChatGPT/Gemini/Grok, generate 4 variations, pick the best, save the PNG to a specified path (~90 seconds).
-3. Same for the favicon, OR use https://favicon.io for a better small-size result (~60 seconds).
-4. Run `node scripts/generate-images.mjs --resize` (5 seconds). The script reads your saved source PNGs and produces the WebP variants and favicon sizes the build expects.
+1. Run `node scripts/generate-images.mjs --prompt-only`. Prints prompts tailored to the site's niche and brand colors.
+2. Copy the hero prompt into ChatGPT/Gemini/Grok, generate, save the PNG (~90 seconds).
+3. Run `node scripts/generate-images.mjs --resize-hero` to produce the three WebP variants (5 seconds).
+4. Generate the favicon — three options described below.
 
-Total per site: ~2-3 minutes of human time. Zero cost.
+Total: ~2-3 minutes of human time per site, zero ongoing cost.
 
 ## Setup (one-time, when the repo is fresh)
-
-### Install npm dependencies
-
-In your repo root:
 
 ```
 npm install
@@ -27,119 +23,117 @@ npm install
 
 This installs `sharp` (image resizing). One-time, ~30 seconds.
 
-### Pick your AI chat tool
+## Hero image workflow
 
-You have three viable options (any one works):
-
-- **ChatGPT Plus** ($20/mo) — DALL-E 3 image gen, 4 variations per prompt by default. Most precise prompt-following.
-- **Gemini Advanced** ($20/mo) — Imagen-powered. Photorealistic, warm. May refuse some commercial-photography prompts.
-- **Grok** (X Premium+) — Aurora image gen. Good general quality, fewer refusals.
-
-Use whichever you already have open. Style differs slightly between them but all produce usable hero images for affiliate sites.
-
-## Standard workflow (per site)
-
-### Step 1: Print the prompts
-
-In your site repo:
+### Step 1: Print the prompt
 
 ```
 node scripts/generate-images.mjs --prompt-only
 ```
 
-This prints two prompts to the terminal AND saves them with full instructions to `public/og-images/INSTRUCTIONS.txt`. The prompts are auto-generated from your `site-config.json` — niche, primary keyword, and brand colors all get baked in.
+Prints two prompts (hero + favicon) tailored to your site config. The hero prompt is what you want for this step.
 
-### Step 2: Generate hero image
+### Step 2: Generate in chat
 
-1. Copy the **hero image prompt** (the first one)
-2. Open ChatGPT, Gemini, or Grok
-3. Paste the prompt
-4. The tool generates 4 variations (asking for variations is built into the prompt)
-5. Pick the variation you like best
-6. Right-click → Save image → save as PNG
-7. Move/rename the file to exactly this path:
-   ```
-   public/og-images/source.png
-   ```
+1. Copy the hero prompt
+2. Paste into ChatGPT (recommended for the editorial aesthetic) or Gemini/Grok
+3. Wait for the image (typically ONE image now, not a grid — the prompt asks for one)
+4. If you don't like it, type "another variation" in chat for a fresh one
+5. Save as `public/og-images/source.png`
 
-### Step 3: Generate favicon (two options)
-
-**Option A — favicon.io (recommended)**
-
-https://favicon.io is purpose-built for favicons and produces sharper small-size output than AI image generation. Two ways:
-
-- **Text-based** — type a single letter (your brand initial), pick a color matching your brand, generate, download. 60 seconds.
-- **Emoji-based** — pick any emoji that fits your niche (🐝 for beekeeping, ☕ for coffee, 🏌️ for golf), download. 30 seconds.
-
-Either way, you get a zip file. Unzip it directly into your `public/` folder. You're done; skip Step 4's favicon part.
-
-**Option B — AI generation via chat tool**
-
-1. Copy the **favicon prompt** from the script output
-2. Paste into ChatGPT, Gemini, or Grok
-3. Pick the variation that's most readable at small size
-4. Save the PNG as:
-   ```
-   public/favicon-source.png
-   ```
-
-### Step 4: Resize
+### Step 3: Resize
 
 ```
-node scripts/generate-images.mjs --resize
+node scripts/generate-images.mjs --resize-hero
 ```
 
-This reads your saved source PNGs and produces:
+Produces `[domain]-og-1920.webp`, `[domain]-og-1200.webp`, `[domain]-og-800.webp` in `public/og-images/`.
 
-For the hero (in `public/og-images/`):
-- `[domain]-og-1920.webp` (1920×1080)
-- `[domain]-og-1200.webp` (1200×675)
-- `[domain]-og-800.webp` (800×450)
+## Favicon workflow — three options
 
-For the favicon (in `public/`):
-- `favicon.ico`
-- `favicon-32.png`
-- `apple-touch-icon.png`
+Favicons are tiny (16-32 pixels). What looks great at 1024×1024 often looks mushy at 16×16. Three approaches, ranked from best small-size legibility to most automatic:
 
-(Skipped automatically if no source.png or favicon-source.png exists.)
+### Option A: Text-based (recommended for most sites)
 
-### Step 5: Build the site
+```
+node scripts/generate-images.mjs --text-favicon B
+```
+
+Generates a favicon with the letter "B" in your brand's accent color on a rounded-square primary color background.
+
+- Crisp at any size including 16×16
+- Always uses your brand colors automatically
+- Single command, no chat, no external tools
+- ~5 seconds end to end
+
+Pick a single letter that represents the brand. Brand initial usually works best (B for BrewVerdict, F for FairwayVerdict). Two-letter codes also work (`--text-favicon BV`) but get smaller and harder to read at tiny sizes.
+
+### Option B: Emoji-based
+
+```
+node scripts/generate-images.mjs --emoji-favicon "B"
+```
+
+Generates a favicon with the emoji centered on a rounded-square brand-color background. Replace the "B" with any emoji like a bee, coffee cup, golf flag, plant sprout, etc.
+
+- Works well for sites where a single emoji is iconic for the niche
+- Renders in full color on Windows and Mac (the script uses your system's emoji font)
+- ~5 seconds end to end
+
+Note: emoji color rendering requires a system emoji font (Segoe UI Emoji on Windows, Apple Color Emoji on Mac). Both are installed by default on those systems.
+
+### Option C: AI-generated (atmospheric sites)
+
+```
+node scripts/generate-images.mjs --prompt-only
+# Copy favicon prompt, paste into ChatGPT/Gemini/Grok
+# Save best result as public/favicon-source.png
+node scripts/generate-images.mjs --resize-favicon
+```
+
+Use this only when text or emoji don't fit the brand aesthetic. AI-generated favicons typically look fuzzy at 16×16, so this is a fallback, not the default.
+
+### Option D: External tool (favicon.io)
+
+Visit https://favicon.io, generate with a letter or emoji using their UI, download the zip, unzip into `public/`. Slightly more polished output than Option A; takes about 60 seconds. Skip the `--resize-favicon` step entirely.
+
+## Granular commands
+
+```
+node scripts/generate-images.mjs --prompt-only          # print prompts only
+node scripts/generate-images.mjs --resize-hero          # resize hero from source.png
+node scripts/generate-images.mjs --resize-favicon       # resize favicon from favicon-source.png
+node scripts/generate-images.mjs --resize               # both (skips missing)
+node scripts/generate-images.mjs --text-favicon B       # programmatic text favicon
+node scripts/generate-images.mjs --emoji-favicon X      # programmatic emoji favicon
+```
+
+The favicon modes are mutually exclusive — pass only one of `--text-favicon`, `--emoji-favicon`, or `--resize-favicon` per run.
+
+## After both hero and favicon are ready
 
 ```
 node scripts/build-site.mjs
 ```
 
-The build script copies everything in `public/` into `dist/`, so your generated images deploy automatically.
-
-## Granular commands
-
-If you want to run just one step:
-
-```
-node scripts/generate-images.mjs --prompt-only       # print prompts only
-node scripts/generate-images.mjs --resize-hero       # resize hero only
-node scripts/generate-images.mjs --resize-favicon    # resize favicon only
-node scripts/generate-images.mjs --resize            # resize both (skips missing)
-```
+The build script copies everything in `public/` into `dist/`. Images deploy automatically with the site.
 
 ## Why this design
 
-**No API costs.** Your existing ChatGPT/Gemini/Grok subscription covers the image generation; the script just handles the boring resizing.
+**No API costs.** Hero generation uses your existing chat subscription. Text/emoji favicons use only `sharp` (already installed). AI-generated favicons (Option C) also use your chat subscription.
 
-**You stay in control of quality.** Auto-generated single-shot images sometimes have weird artifacts; the 4-variations workflow lets you pick the best.
+**Sharp text edges for favicons.** Text and emoji rendering goes through SVG-to-raster conversion, which produces clean edges at any size — unlike AI image generation which produces fuzz at small sizes.
 
-**No new billing relationships.** No credit cards, no platform setup, no quota management.
-
-**Tradeoff:** ~2 minutes of human time per site instead of zero. At your scale (20 sites total), that's 40-60 minutes one-time, never repeated. Worth it.
+**You stay in control of quality.** The chat workflow lets you regenerate hero images until you have one you like. The text/emoji favicon modes are deterministic — same input always produces the same output.
 
 ## When to use product images vs AI generation
 
-**Hero images and favicons** — AI generation is appropriate. These are atmospheric/abstract, not specific products.
+**Hero images and favicons** — AI generation (for hero) or text/emoji (for favicon) is appropriate. These are atmospheric or symbolic, not specific products.
 
 **Product card images** — Do NOT use AI generation. Two reasons:
 
-1. AI cannot accurately render real products (Hario V60, Fellow Stagg, etc.) Readers will notice the inaccuracy.
-2. Customers spending $50-500 on equipment need to see what they're actually buying.
+1. AI cannot accurately render real products. Readers will notice the inaccuracy.
+2. Customers spending serious money need to see what they're actually buying.
 
 For product images, source them from:
 - Amazon Product Advertising API (requires Associate API access)
@@ -151,16 +145,18 @@ For product images, source them from:
 
 **`Cannot find module 'sharp'`** — Run `npm install` from the repo root.
 
-**`Source file at [path] is not a valid image`** — The file you saved isn't a real PNG (maybe a screenshot of a screenshot, or saved with a wrong extension). Re-save the original image from the chat tool as a PNG.
+**`Source file at [path] is not a valid image`** — The file you saved isn't a real image. Re-save from the chat tool as a PNG.
 
-**`Source aspect ratio is X (target is 1.78)`** — Warning, not error. Your source isn't 16:9 so the resize will center-crop. Acceptable for most cases. Regenerate with explicit 16:9 ask if you want pixel-perfect.
+**`Source aspect ratio is X (target is 1.78)`** — Warning, not error. Source isn't 16:9; resize will center-crop. Acceptable for most cases.
 
-**Chat tool refused the prompt** — Some safety filters reject certain commercial-photography prompts. Try a different chat tool (ChatGPT and Grok refuse less than Gemini for commercial content). Or rephrase the prompt to remove triggering words.
+**Chat tool refused the prompt** — Some safety filters reject certain commercial-photography prompts. Try a different chat tool. Or rephrase to remove triggering words.
 
-**Image looks AI-generated even though I picked the best variation** — That's the current state of AI image generation. For higher-end sites where this matters more, consider hiring a real photographer for the hero (one-time cost, lifetime use) and using the script's resize-only mode to crop their work into your three WebP variants.
+**Hero shows broken when I open `dist/index.html` locally** — Local `file://` protocol cannot resolve absolute paths like `/og-images/...`. Push to Cloudflare Pages and view the live URL instead. Image will render correctly there.
+
+**Favicon does not update after change** — Browsers cache favicons aggressively. Open the site in an incognito window to see the new favicon. Hard refresh (Ctrl+Shift+R) sometimes helps, sometimes does not.
+
+**Emoji favicon renders as a hollow box** — Your system's emoji font is not available to sharp's renderer. Use `--text-favicon` instead, or generate via favicon.io.
 
 ## Editing the prompt template
 
-The prompts are constructed in `scripts/generate-images.mjs` in the `buildHeroPrompt()` and `buildFaviconPrompt()` functions. Edit those strings if you want to tune the default style for all future sites.
-
-Per-site overrides aren't supported yet — if you want a specific site to have a unique prompt style, hand-edit the source files in `public/` after generating, or extend the script to read a `config.images.customPrompt` field.
+The hero and AI-favicon prompts are built in `scripts/generate-images.mjs` in the `buildHeroPrompt()` and `buildFaviconPrompt()` functions. Edit those strings to tune the default style for all future sites.

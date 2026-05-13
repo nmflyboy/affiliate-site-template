@@ -67,11 +67,27 @@ function die(msg) {
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
-const promptOnly = args.includes('--prompt-only') || !args.some(a => a.startsWith('--resize'));
+
+// --text-favicon B          (single letter in brand colors)
+// --emoji-favicon 🐝        (emoji in brand colors)
+// --resize-favicon          (uses public/favicon-source.png saved by user)
+// These three are mutually exclusive favicon modes.
+const textFaviconIdx = args.indexOf('--text-favicon');
+const emojiFaviconIdx = args.indexOf('--emoji-favicon');
+const textFaviconChar = textFaviconIdx !== -1 ? args[textFaviconIdx + 1] : null;
+const emojiFaviconChar = emojiFaviconIdx !== -1 ? args[emojiFaviconIdx + 1] : null;
+
+const promptOnly = args.includes('--prompt-only') || (!args.some(a => a.startsWith('--resize')) && !textFaviconChar && !emojiFaviconChar);
 const resizeAll = args.includes('--resize');
 const resizeHero = resizeAll || args.includes('--resize-hero');
 const resizeFavicon = resizeAll || args.includes('--resize-favicon');
-const configPathArg = args.find(a => !a.startsWith('--'));
+
+// Positional arg = config path. Skip option values (the char after --text-favicon, etc).
+const skipNextIndices = new Set();
+if (textFaviconIdx !== -1) skipNextIndices.add(textFaviconIdx + 1);
+if (emojiFaviconIdx !== -1) skipNextIndices.add(emojiFaviconIdx + 1);
+
+const configPathArg = args.find((a, i) => !a.startsWith('--') && !skipNextIndices.has(i));
 const configPath = path.resolve(configPathArg || './site-config.json');
 
 // ---------------------------------------------------------------------------
@@ -437,6 +453,159 @@ async function resizeFaviconImage(config) {
 }
 
 // ---------------------------------------------------------------------------
+// Text-based favicon (--text-favicon X)
+//
+// Renders a single character on a colored background using SVG, then
+// rasterizes via sharp into the three favicon sizes. Designed for crisp
+// small-size legibility — the typical use case is a brand initial.
+// ---------------------------------------------------------------------------
+
+async function generateTextFavicon(config, character) {
+  log(`${ANSI.bold}Text-based favicon${ANSI.reset}`);
+  log(`  Character: "${character}"`, 'gray');
+  log(`  Colors:    bg ${primaryColor} / text ${accentColor}`, 'gray');
+
+  if (!character || character.length === 0) {
+    die(`No character provided. Usage: --text-favicon B`);
+  }
+  if (character.length > 3) {
+    log(`  WARN  Character string is longer than 3 — favicon may look cramped.`, 'yellow');
+  }
+
+  // Build an SVG with the character centered. Square 512x512 source which
+  // sharp will resize down to favicon sizes.
+  //
+  // Font sizing: ~62% of canvas for single char gives good visual weight;
+  // adjust slightly for multi-char. Using system-ui as font-family because
+  // sharp/librsvg won't have access to web fonts — system-ui maps to the
+  // OS default which is good enough for a single bold character.
+  const canvasSize = 512;
+  const fontSizeRatio = character.length === 1 ? 0.62 : character.length === 2 ? 0.45 : 0.32;
+  const fontSize = Math.round(canvasSize * fontSizeRatio);
+
+  // Use a heavy font weight for legibility at small sizes.
+  // The y-offset accounts for typical font baseline metrics — empirically
+  // pulling up ~5% of font size centers the character better than CSS's
+  // text-anchor=middle alone.
+  const yOffset = canvasSize / 2 + fontSize * 0.34;
+
+  // Escape XML-special chars in the character (very edge case — like if
+  // someone passes an ampersand or a quote).
+  const escapedChar = character
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasSize}" height="${canvasSize}" viewBox="0 0 ${canvasSize} ${canvasSize}">
+  <rect width="${canvasSize}" height="${canvasSize}" rx="${canvasSize * 0.18}" fill="${primaryColor}"/>
+  <text x="${canvasSize / 2}" y="${yOffset}"
+        font-family="system-ui, -apple-system, 'Segoe UI', Arial, sans-serif"
+        font-size="${fontSize}"
+        font-weight="800"
+        fill="${accentColor}"
+        text-anchor="middle">${escapedChar}</text>
+</svg>`;
+
+  await fs.mkdir(PUBLIC_DIR, { recursive: true });
+
+  // Convert SVG to PNG once, at maximum favicon-relevant size, then resize down
+  const sourceBuffer = await sharp(Buffer.from(svg), { density: 300 })
+    .resize(512, 512)
+    .png()
+    .toBuffer();
+
+  // Write the three favicon variants
+  await writeFaviconVariants(sourceBuffer);
+  log('');
+}
+
+// ---------------------------------------------------------------------------
+// Emoji-based favicon (--emoji-favicon X)
+//
+// Same idea as text favicon but uses an emoji as the centered glyph.
+// Most modern systems have full color emoji fonts; sharp/librsvg should
+// pick those up via system-ui or via the emoji font fallback chain.
+// ---------------------------------------------------------------------------
+
+async function generateEmojiFavicon(config, emoji) {
+  log(`${ANSI.bold}Emoji-based favicon${ANSI.reset}`);
+  log(`  Emoji:  ${emoji}`, 'gray');
+  log(`  Colors: bg ${primaryColor}`, 'gray');
+
+  if (!emoji || emoji.length === 0) {
+    die(`No emoji provided. Usage: --emoji-favicon 🐝`);
+  }
+
+  // Emoji rendering through SVG <text> needs the emoji font available to
+  // librsvg. On most systems this works via the emoji font fallback chain.
+  // We use a slightly larger sizing because emojis tend to have built-in
+  // padding that makes them look smaller than equivalent text characters.
+  const canvasSize = 512;
+  const fontSize = Math.round(canvasSize * 0.72);
+  const yOffset = canvasSize / 2 + fontSize * 0.36;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasSize}" height="${canvasSize}" viewBox="0 0 ${canvasSize} ${canvasSize}">
+  <rect width="${canvasSize}" height="${canvasSize}" rx="${canvasSize * 0.18}" fill="${primaryColor}"/>
+  <text x="${canvasSize / 2}" y="${yOffset}"
+        font-family="'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', system-ui, sans-serif"
+        font-size="${fontSize}"
+        text-anchor="middle">${emoji}</text>
+</svg>`;
+
+  await fs.mkdir(PUBLIC_DIR, { recursive: true });
+
+  const sourceBuffer = await sharp(Buffer.from(svg), { density: 300 })
+    .resize(512, 512)
+    .png()
+    .toBuffer();
+
+  await writeFaviconVariants(sourceBuffer);
+
+  // Server warning: emoji rendering depends on system fonts. If the favicon
+  // looks like a hollow box or a Unicode codepoint number, the emoji font
+  // wasn't available to sharp's renderer. In that case fall back to
+  // --text-favicon or use favicon.io.
+  log(`  ${ANSI.gray}Note: if the emoji renders as a hollow box, your system's emoji${ANSI.reset}`);
+  log(`  ${ANSI.gray}font isn't available to sharp's renderer. Try --text-favicon instead${ANSI.reset}`);
+  log(`  ${ANSI.gray}or generate via favicon.io.${ANSI.reset}`);
+  log('');
+}
+
+// ---------------------------------------------------------------------------
+// Shared: write favicon variants from a 512x512 source buffer
+// ---------------------------------------------------------------------------
+
+async function writeFaviconVariants(sourceBuffer) {
+  // 32x32 PNG
+  const png32Path = path.join(PUBLIC_DIR, 'favicon-32.png');
+  await sharp(sourceBuffer)
+    .resize(32, 32, { fit: 'cover' })
+    .png()
+    .toFile(png32Path);
+  const png32Stats = await fs.stat(png32Path);
+  log(`  OK    Wrote ${path.relative(REPO_DIR, png32Path)} (${(png32Stats.size / 1024).toFixed(1)} KB)`, 'green');
+
+  // 180x180 apple-touch-icon
+  const applePath = path.join(PUBLIC_DIR, 'apple-touch-icon.png');
+  await sharp(sourceBuffer)
+    .resize(180, 180, { fit: 'cover' })
+    .png()
+    .toFile(applePath);
+  const appleStats = await fs.stat(applePath);
+  log(`  OK    Wrote ${path.relative(REPO_DIR, applePath)} (${(appleStats.size / 1024).toFixed(1)} KB)`, 'green');
+
+  // favicon.ico (PNG-encoded, single-resolution 32x32)
+  const icoPath = path.join(PUBLIC_DIR, 'favicon.ico');
+  await sharp(sourceBuffer)
+    .resize(32, 32, { fit: 'cover' })
+    .png()
+    .toFile(icoPath);
+  const icoStats = await fs.stat(icoPath);
+  log(`  OK    Wrote ${path.relative(REPO_DIR, icoPath)} (${(icoStats.size / 1024).toFixed(1)} KB, PNG-encoded ICO)`, 'green');
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -446,17 +615,25 @@ async function main() {
   log(`Niche:   ${niche}`, 'gray');
   log(`Keyword: ${primaryKeyword}`, 'gray');
 
-  // If neither resize flag was set, we're in prompt-only mode
-  if (promptOnly && !resizeHero && !resizeFavicon) {
+  // Mutual exclusion check for favicon modes
+  const faviconModes = [textFaviconChar, emojiFaviconChar, resizeFavicon].filter(Boolean);
+  if (faviconModes.length > 1) {
+    die(`Pick ONE favicon mode: --text-favicon, --emoji-favicon, or --resize-favicon. You passed multiple.`);
+  }
+
+  // If no resize/generate flags, we're in prompt-only mode
+  if (promptOnly && !resizeHero && !resizeFavicon && !textFaviconChar && !emojiFaviconChar) {
     await printPrompts(config);
     log(`${ANSI.green}${ANSI.bold}Ready.${ANSI.reset} Follow the steps above, then re-run with --resize.`);
     return;
   }
 
   if (resizeHero) await resizeHeroImage(config);
-  if (resizeFavicon) await resizeFaviconImage(config);
+  if (textFaviconChar) await generateTextFavicon(config, textFaviconChar);
+  else if (emojiFaviconChar) await generateEmojiFavicon(config, emojiFaviconChar);
+  else if (resizeFavicon) await resizeFaviconImage(config);
 
-  log(`${ANSI.green}${ANSI.bold}Resize complete.${ANSI.reset}`);
+  log(`${ANSI.green}${ANSI.bold}Done.${ANSI.reset}`);
   log(`Next: ${ANSI.cyan}node scripts/build-site.mjs${ANSI.reset}`);
   log('');
 }
