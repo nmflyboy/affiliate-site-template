@@ -2,121 +2,165 @@
 
 How the factory handles hero images and favicons.
 
-## What gets generated
+## Workflow at a glance
 
-For every site, the `generate-images.mjs` script produces:
+The factory uses a **two-step manual-plus-script workflow** that uses your existing ChatGPT Plus, Gemini Advanced, or Grok subscription. No API keys, no billing setup, no per-image costs.
 
-**Hero image variants** (in `public/og-images/`):
-- `[domain]-og-1920.webp` (desktop, 1920×1080)
-- `[domain]-og-1200.webp` (tablet, 1200×675)
-- `[domain]-og-800.webp` (mobile, 800×450)
-- `[domain]-og-source.png` (high-res source backup, not deployed)
+Per site:
 
-**Favicon files** (in `public/`):
-- `favicon.ico` (32×32, single-resolution)
-- `favicon-32.png` (32×32)
-- `apple-touch-icon.png` (180×180)
+1. Run `node scripts/generate-images.mjs --prompt-only` (1 second). Prints two prompts (hero + favicon) tailored to the site's niche and brand colors, AND saves them to a text file for reference.
+2. Copy the hero prompt into ChatGPT/Gemini/Grok, generate 4 variations, pick the best, save the PNG to a specified path (~90 seconds).
+3. Same for the favicon, OR use https://favicon.io for a better small-size result (~60 seconds).
+4. Run `node scripts/generate-images.mjs --resize` (5 seconds). The script reads your saved source PNGs and produces the WebP variants and favicon sizes the build expects.
 
-The build script `build-site.mjs` then copies the contents of `public/` into `dist/` at deploy time. The references in the template HTML already point at the correct paths.
+Total per site: ~2-3 minutes of human time. Zero cost.
 
-## Setup (one-time)
+## Setup (one-time, when the repo is fresh)
 
-### 1. Get a Google AI Studio API key
+### Install npm dependencies
 
-Go to https://aistudio.google.com/apikey, sign in with your Google account, click **Create API key**, copy the value (starts with `AIza...`).
-
-### 2. Add the key to a .env file
-
-In your repo root, create a file named `.env` with this single line:
-
-```
-GEMINI_API_KEY=AIza-your-key-here
-```
-
-**Critical:** `.env` is in `.gitignore` and must never be committed. If you accidentally commit an API key, revoke it immediately at https://aistudio.google.com/apikey and create a new one.
-
-### 3. Install npm dependencies (one-time per repo)
+In your repo root:
 
 ```
 npm install
 ```
 
-This installs the three packages the image script needs: `@google/genai`, `sharp`, `dotenv`.
+This installs `sharp` (image resizing). One-time, ~30 seconds.
 
-## Usage
+### Pick your AI chat tool
 
-### Generate both hero and favicon
+You have three viable options (any one works):
 
-```
-node scripts/generate-images.mjs
-```
+- **ChatGPT Plus** ($20/mo) — DALL-E 3 image gen, 4 variations per prompt by default. Most precise prompt-following.
+- **Gemini Advanced** ($20/mo) — Imagen-powered. Photorealistic, warm. May refuse some commercial-photography prompts.
+- **Grok** (X Premium+) — Aurora image gen. Good general quality, fewer refusals.
 
-Or via the npm script:
+Use whichever you already have open. Style differs slightly between them but all produce usable hero images for affiliate sites.
 
-```
-npm run images
-```
+## Standard workflow (per site)
 
-This skips any image files that already exist. To overwrite:
+### Step 1: Print the prompts
 
-```
-npm run images:force
-```
-
-### Generate hero only
+In your site repo:
 
 ```
-npm run images:hero
+node scripts/generate-images.mjs --prompt-only
 ```
 
-### Generate favicon only
+This prints two prompts to the terminal AND saves them with full instructions to `public/og-images/INSTRUCTIONS.txt`. The prompts are auto-generated from your `site-config.json` — niche, primary keyword, and brand colors all get baked in.
+
+### Step 2: Generate hero image
+
+1. Copy the **hero image prompt** (the first one)
+2. Open ChatGPT, Gemini, or Grok
+3. Paste the prompt
+4. The tool generates 4 variations (asking for variations is built into the prompt)
+5. Pick the variation you like best
+6. Right-click → Save image → save as PNG
+7. Move/rename the file to exactly this path:
+   ```
+   public/og-images/source.png
+   ```
+
+### Step 3: Generate favicon (two options)
+
+**Option A — favicon.io (recommended)**
+
+https://favicon.io is purpose-built for favicons and produces sharper small-size output than AI image generation. Two ways:
+
+- **Text-based** — type a single letter (your brand initial), pick a color matching your brand, generate, download. 60 seconds.
+- **Emoji-based** — pick any emoji that fits your niche (🐝 for beekeeping, ☕ for coffee, 🏌️ for golf), download. 30 seconds.
+
+Either way, you get a zip file. Unzip it directly into your `public/` folder. You're done; skip Step 4's favicon part.
+
+**Option B — AI generation via chat tool**
+
+1. Copy the **favicon prompt** from the script output
+2. Paste into ChatGPT, Gemini, or Grok
+3. Pick the variation that's most readable at small size
+4. Save the PNG as:
+   ```
+   public/favicon-source.png
+   ```
+
+### Step 4: Resize
 
 ```
-npm run images:favicon
+node scripts/generate-images.mjs --resize
 ```
 
-## How prompts are built
+This reads your saved source PNGs and produces:
 
-The script reads `site-config.json` and composes the Imagen prompt automatically using:
+For the hero (in `public/og-images/`):
+- `[domain]-og-1920.webp` (1920×1080)
+- `[domain]-og-1200.webp` (1200×675)
+- `[domain]-og-800.webp` (800×450)
 
-- `site.niche` — the topic of the site, used as the main subject
-- `seo.primaryKeyword` — refines the subject toward what readers searched for
-- `design.primaryColor` and `design.accentColor` — used for favicon color palette
+For the favicon (in `public/`):
+- `favicon.ico`
+- `favicon-32.png`
+- `apple-touch-icon.png`
 
-You do not write the prompt manually for each site. The prompt template is in `scripts/generate-images.mjs` in the `buildHeroPrompt()` and `buildFaviconPrompt()` functions. Adjust those if the default style does not work for a particular niche.
+(Skipped automatically if no source.png or favicon-source.png exists.)
 
-## Cost and quotas
+### Step 5: Build the site
 
-Imagen 4 generation costs roughly $0.04 per image as of May 2026. Google AI Studio includes a free tier that typically covers low-volume use; check current limits at https://ai.google.dev/pricing.
+```
+node scripts/build-site.mjs
+```
 
-For a typical site: one hero call + one favicon call = ~$0.08. For 20 sites: ~$1.60 total.
+The build script copies everything in `public/` into `dist/`, so your generated images deploy automatically.
 
-Costs are billed to your Google account based on the API key in `.env`. Set up billing limits in the Google Cloud console if you want a hard cap.
+## Granular commands
 
-## When NOT to use auto-generation
+If you want to run just one step:
 
-The script is designed for hero images and favicons — backgrounds and brand marks, not specific products. **Do not use it for product card images.** Two reasons:
+```
+node scripts/generate-images.mjs --prompt-only       # print prompts only
+node scripts/generate-images.mjs --resize-hero       # resize hero only
+node scripts/generate-images.mjs --resize-favicon    # resize favicon only
+node scripts/generate-images.mjs --resize            # resize both (skips missing)
+```
 
-1. AI-generated product images look fake. Readers spending money on $50-$500 equipment will notice and lose trust.
-2. AI cannot generate accurate likenesses of real products. The Hario V60 in the AI output will not look like the actual Hario V60.
+## Why this design
 
-For product images, use real product photography:
-- Pull from the Amazon Product Advertising API (requires Associate API access)
-- Download from manufacturer media kits
-- Use stock photos from Unsplash or Pexels for generic product types
+**No API costs.** Your existing ChatGPT/Gemini/Grok subscription covers the image generation; the script just handles the boring resizing.
 
-## Manual override
+**You stay in control of quality.** Auto-generated single-shot images sometimes have weird artifacts; the 4-variations workflow lets you pick the best.
 
-Anything in `public/` overrides what the build expects. If you want a hand-made favicon instead of the AI-generated one, just drop your favicon.ico/apple-touch-icon.png in `public/` and the script will skip generation (unless you pass `--force`).
+**No new billing relationships.** No credit cards, no platform setup, no quota management.
 
-Same for hero images: if you place WebP files at the expected paths, the script skips its API call.
+**Tradeoff:** ~2 minutes of human time per site instead of zero. At your scale (20 sites total), that's 40-60 minutes one-time, never repeated. Worth it.
+
+## When to use product images vs AI generation
+
+**Hero images and favicons** — AI generation is appropriate. These are atmospheric/abstract, not specific products.
+
+**Product card images** — Do NOT use AI generation. Two reasons:
+
+1. AI cannot accurately render real products (Hario V60, Fellow Stagg, etc.) Readers will notice the inaccuracy.
+2. Customers spending $50-500 on equipment need to see what they're actually buying.
+
+For product images, source them from:
+- Amazon Product Advertising API (requires Associate API access)
+- Manufacturer media kits (most allow editorial use in reviews)
+- Stock photo libraries (Unsplash, Pexels) for generic placeholders
+- Photographing them yourself if you have hands-on review setup
 
 ## Troubleshooting
 
-**`GEMINI_API_KEY not found`** — Check the .env file exists at repo root with the key on one line, no quotes.
+**`Cannot find module 'sharp'`** — Run `npm install` from the repo root.
 
-**`Imagen API call failed`** — Verify the API key works. Test at https://aistudio.google.com/apikey. Quota limits may apply on the free tier.
+**`Source file at [path] is not a valid image`** — The file you saved isn't a real PNG (maybe a screenshot of a screenshot, or saved with a wrong extension). Re-save the original image from the chat tool as a PNG.
 
-**`Cannot find module '@google/genai'`** — Run `npm install` from the repo root.
+**`Source aspect ratio is X (target is 1.78)`** — Warning, not error. Your source isn't 16:9 so the resize will center-crop. Acceptable for most cases. Regenerate with explicit 16:9 ask if you want pixel-perfect.
 
-**Image looks generic / off-brand** — Tweak the prompt builder functions in `scripts/generate-images.mjs`. The prompt is just a JavaScript string composed from config values; adjusting the wording adjusts the output.
+**Chat tool refused the prompt** — Some safety filters reject certain commercial-photography prompts. Try a different chat tool (ChatGPT and Grok refuse less than Gemini for commercial content). Or rephrase the prompt to remove triggering words.
+
+**Image looks AI-generated even though I picked the best variation** — That's the current state of AI image generation. For higher-end sites where this matters more, consider hiring a real photographer for the hero (one-time cost, lifetime use) and using the script's resize-only mode to crop their work into your three WebP variants.
+
+## Editing the prompt template
+
+The prompts are constructed in `scripts/generate-images.mjs` in the `buildHeroPrompt()` and `buildFaviconPrompt()` functions. Edit those strings if you want to tune the default style for all future sites.
+
+Per-site overrides aren't supported yet — if you want a specific site to have a unique prompt style, hand-edit the source files in `public/` after generating, or extend the script to read a `config.images.customPrompt` field.

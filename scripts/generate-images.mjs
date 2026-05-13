@@ -1,35 +1,42 @@
 #!/usr/bin/env node
 
 /**
- * generate-images.mjs
+ * generate-images.mjs (v2 — Path A: manual generation, automated resize)
  *
- * Generates hero images (and optionally favicons) for an affiliate site using
- * Google's Imagen API. Reads site-config.json, builds a niche-appropriate
- * prompt, calls Imagen, and writes the results into public/og-images/ and
- * (optionally) public/.
+ * Generates hero images and favicons via a two-step workflow:
+ *   1. Print site-specific prompts to terminal + INSTRUCTIONS.txt
+ *   2. You generate the source images manually in ChatGPT, Gemini, or Grok
+ *   3. Save the source PNGs at known paths
+ *   4. Run the script again with --resize to produce the final WebP/ICO/PNG variants
  *
  * Usage:
- *   node scripts/generate-images.mjs                       (uses ./site-config.json)
- *   node scripts/generate-images.mjs ./other-config.json
- *   node scripts/generate-images.mjs --hero-only           (skip favicon generation)
- *   node scripts/generate-images.mjs --favicon-only        (skip hero generation)
- *   node scripts/generate-images.mjs --force               (overwrite existing files)
+ *   node scripts/generate-images.mjs                     (default: print prompts)
+ *   node scripts/generate-images.mjs --prompt-only       (same — print prompts only)
+ *   node scripts/generate-images.mjs --resize            (resize both hero + favicon)
+ *   node scripts/generate-images.mjs --resize-hero       (resize hero only)
+ *   node scripts/generate-images.mjs --resize-favicon    (resize favicon only)
  *
- * Requires:
- *   - GEMINI_API_KEY in a .env file at the repo root
- *   - npm packages: @google/genai, sharp, dotenv
+ * No API keys required. No billing relationships. Uses your existing
+ * ChatGPT Plus / Gemini Advanced / Grok subscription for the manual
+ * generation step.
  *
- * Cost (Imagen 4 standard, May 2026): roughly $0.04 per generated image.
- * One site = one hero generation (we resize from one source) = roughly $0.04.
- * If --favicon is enabled, that's a second call = roughly $0.08 total per site.
+ * Source file locations (you save these manually after generation):
+ *   public/og-images/source.png          (hero source)
+ *   public/favicon-source.png             (favicon source)
+ *
+ * Output file locations (this script writes these):
+ *   public/og-images/[domain]-og-1920.webp  (desktop hero)
+ *   public/og-images/[domain]-og-1200.webp  (tablet hero)
+ *   public/og-images/[domain]-og-800.webp   (mobile hero)
+ *   public/favicon.ico                       (32x32)
+ *   public/favicon-32.png                    (32x32 PNG)
+ *   public/apple-touch-icon.png              (180x180)
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import dotenv from 'dotenv';
 import sharp from 'sharp';
-import { GoogleGenAI } from '@google/genai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +50,7 @@ const ANSI = {
   red: '\x1b[31m',
   cyan: '\x1b[36m',
   gray: '\x1b[90m',
+  blue: '\x1b[34m',
 };
 
 function log(msg, color = 'reset') {
@@ -50,7 +58,7 @@ function log(msg, color = 'reset') {
 }
 
 function die(msg) {
-  console.error(`${ANSI.red}${ANSI.bold}IMAGE GEN FAILED${ANSI.reset} ${msg}`);
+  console.error(`${ANSI.red}${ANSI.bold}FAILED${ANSI.reset} ${msg}`);
   process.exit(1);
 }
 
@@ -59,23 +67,16 @@ function die(msg) {
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
-const force = args.includes('--force');
-const heroOnly = args.includes('--hero-only');
-const faviconOnly = args.includes('--favicon-only');
-const configPath = path.resolve(args.find(a => !a.startsWith('--')) || './site-config.json');
-
-const doHero = !faviconOnly;
-const doFavicon = !heroOnly;
+const promptOnly = args.includes('--prompt-only') || !args.some(a => a.startsWith('--resize'));
+const resizeAll = args.includes('--resize');
+const resizeHero = resizeAll || args.includes('--resize-hero');
+const resizeFavicon = resizeAll || args.includes('--resize-favicon');
+const configPathArg = args.find(a => !a.startsWith('--'));
+const configPath = path.resolve(configPathArg || './site-config.json');
 
 // ---------------------------------------------------------------------------
-// Load environment + config
+// Load config
 // ---------------------------------------------------------------------------
-
-dotenv.config({ path: path.join(REPO_ROOT, '.env') });
-
-if (!process.env.GEMINI_API_KEY) {
-  die('GEMINI_API_KEY not found. Add it to a .env file at the repo root: GEMINI_API_KEY=AIza...');
-}
 
 let config;
 try {
@@ -84,47 +85,48 @@ try {
   die(`Cannot read config at ${configPath}: ${err.message}`);
 }
 
+const REPO_DIR = path.dirname(configPath);
+const PUBLIC_DIR = path.join(REPO_DIR, 'public');
+const OG_IMAGES_DIR = path.join(PUBLIC_DIR, 'og-images');
+const HERO_SOURCE = path.join(OG_IMAGES_DIR, 'source.png');
+const FAVICON_SOURCE = path.join(PUBLIC_DIR, 'favicon-source.png');
+
 const domain = config.site.domain;
 const brandName = config.site.brandName;
 const niche = config.site.niche;
 const primaryKeyword = config.seo.primaryKeyword;
 const accentColor = config.design.accentColor;
 const primaryColor = config.design.primaryColor;
-
-log(`${ANSI.bold}generate-images${ANSI.reset}`);
-log(`Domain:  ${domain}`, 'gray');
-log(`Niche:   ${niche}`, 'gray');
-log(`Keyword: ${primaryKeyword}`, 'gray');
-log('');
+const darkestColor = config.design.darkestBrandColor;
 
 // ---------------------------------------------------------------------------
-// Hero image prompt builder
+// Hero prompt builder
 // ---------------------------------------------------------------------------
 
-/**
- * Build a niche-appropriate Imagen prompt for the hero image.
- *
- * Imagen responds well to:
- *  - Photographic style descriptors
- *  - Specific lighting language
- *  - Composition cues (wide angle, depth of field)
- *  - Negative prompts via explicit "no X" phrasing
- *
- * We compose: subject (from niche) + style + lighting + composition + negatives.
- */
 function buildHeroPrompt(config) {
-  const niche = config.site.niche;
-  const keyword = config.seo.primaryKeyword;
-
   return [
-    `A wide horizontal photograph in 16:9 aspect ratio, suitable as a website header image.`,
-    `Subject: a tasteful, on-brand scene representing ${niche}.`,
-    `Specifically depict elements relevant to "${keyword}" without including any text, logos, or watermarks.`,
-    `Photographic style with shallow depth of field, soft natural lighting (golden hour or soft daylight), warm and inviting tone.`,
-    `Composition framed for use as a website hero where readable text could be overlaid on the lower or upper third.`,
-    `High resolution, sharp focus on the main subject, slightly blurred natural background.`,
-    `No people facing the camera, no celebrity likenesses, no copyrighted characters, no brand names visible, no text, no watermarks, no UI elements.`,
-  ].join(' ');
+    `Generate 4 variations of a wide horizontal hero image with a 16:9 aspect ratio,`,
+    `designed as a website header for an editorial review site.`,
+    ``,
+    `Subject: a tasteful editorial scene depicting ${niche}.`,
+    `Specifically include visual elements that a reader searching for "${primaryKeyword}" would find relevant and trustworthy.`,
+    ``,
+    `Composition: leave the LEFT THIRD of the frame relatively uncluttered`,
+    `so readable text could be overlaid in that area. Main subject positioned`,
+    `in the center-right of the frame.`,
+    ``,
+    `Style: editorial photographic style with shallow depth of field, soft`,
+    `natural lighting (golden hour or soft morning light) coming from the side.`,
+    `Slightly blurred natural background suggesting an appropriate setting`,
+    `for the subject matter. Sharp focus on the main subject.`,
+    ``,
+    `Color tone: warm and inviting, restrained palette, magazine-quality`,
+    `aesthetic suggesting a premium product review.`,
+    ``,
+    `Forbidden elements: NO people facing the camera, NO celebrity likenesses,`,
+    `NO copyrighted characters, NO brand names visible, NO logos, NO text overlays,`,
+    `NO watermarks, NO UI elements, NO promotional banners.`,
+  ].join(' ').replace(/\s+/g, ' ').trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -132,69 +134,209 @@ function buildHeroPrompt(config) {
 // ---------------------------------------------------------------------------
 
 function buildFaviconPrompt(config) {
-  const brand = config.site.brandName;
-  const niche = config.site.niche;
-  const accent = config.design.accentColor;
-  const primary = config.design.primaryColor;
-
-  // Favicons are tiny; AI generation tends to produce too much detail.
-  // We ask for a flat, single-symbol icon and the build-time resize
-  // crunches it down. Better-than-nothing baseline; recommend manual
-  // override via favicon.io for production.
   return [
-    `A minimalist flat icon, single bold symbol on a transparent or solid background.`,
-    `Subject: one recognizable symbol representing ${niche}, simple geometric shape, high contrast.`,
-    `Color palette: ${primary} and ${accent} only.`,
-    `Square 1:1 aspect ratio.`,
-    `Flat 2D vector-style illustration, no gradients, no shadows, no text, no watermarks, no fine detail.`,
-    `Designed to remain legible when scaled down to 16x16 or 32x32 pixels.`,
-  ].join(' ');
+    `Generate 4 variations of a minimalist flat icon design.`,
+    ``,
+    `Subject: a single bold geometric symbol representing ${niche}.`,
+    `Choose ONE iconic visual element associated with the niche (not multiple combined).`,
+    `Examples of good single-symbol approaches: silhouette of a key piece of equipment,`,
+    `stylized abstract representation, single recognizable shape.`,
+    ``,
+    `Format: square 1:1 aspect ratio. Flat 2D vector-style illustration only.`,
+    `Solid colors only, NO gradients, NO shadows, NO fine detail.`,
+    ``,
+    `Color palette: use only these two colors:`,
+    `  - Primary: ${primaryColor} (the deeper background or main shape)`,
+    `  - Accent: ${accentColor} (the highlight or detail)`,
+    `Optionally a small amount of white space.`,
+    ``,
+    `Critical requirement: the design must remain legible and recognizable`,
+    `when scaled down to 16x16 pixels (the size of a browser favicon).`,
+    `Avoid any details thinner than ~5% of the icon width.`,
+    ``,
+    `Forbidden elements: NO text, NO numbers, NO letters, NO watermarks,`,
+    `NO photorealism, NO complex illustration, NO branded characters.`,
+  ].join(' ').replace(/\s+/g, ' ').trim();
 }
 
 // ---------------------------------------------------------------------------
-// Imagen API call
+// Prompt-only mode
 // ---------------------------------------------------------------------------
 
-async function generateImageWithImagen(prompt, aspectRatio) {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+async function printPrompts(config) {
+  const heroPrompt = buildHeroPrompt(config);
+  const faviconPrompt = buildFaviconPrompt(config);
 
-  log(`  Calling Imagen API (aspect ratio ${aspectRatio})...`, 'gray');
-  const startTime = Date.now();
+  // Make sure the output directory exists so we can save INSTRUCTIONS.txt
+  await fs.mkdir(OG_IMAGES_DIR, { recursive: true });
 
-  let response;
+  const heroSavePath = HERO_SOURCE;
+  const faviconSavePath = FAVICON_SOURCE;
+
+  const headerLine = '='.repeat(72);
+  const dashLine = '-'.repeat(70);
+
+  // Build the on-screen output AND the instructions file content
+  const fullInstructions = [
+    headerLine,
+    `  IMAGE GENERATION INSTRUCTIONS — ${brandName} (${domain})`,
+    headerLine,
+    ``,
+    `Niche:        ${niche}`,
+    `Keyword:      ${primaryKeyword}`,
+    `Brand colors: ${primaryColor} primary / ${accentColor} accent`,
+    ``,
+    headerLine,
+    `  STEP 1 OF 2: HERO IMAGE`,
+    headerLine,
+    ``,
+    `1. COPY this prompt and paste it into ChatGPT, Gemini, or Grok:`,
+    ``,
+    dashLine,
+    heroPrompt,
+    dashLine,
+    ``,
+    `2. The chat tool generates 4 variations. PICK YOUR FAVORITE.`,
+    ``,
+    `3. SAVE the chosen image as a PNG file at this exact path:`,
+    ``,
+    `   ${heroSavePath}`,
+    ``,
+    `4. RUN:`,
+    ``,
+    `   node scripts/generate-images.mjs --resize-hero`,
+    ``,
+    `   This produces:`,
+    `   - ${path.join(OG_IMAGES_DIR, `${domain.replace(/\./g, '-')}-og-1920.webp`)}`,
+    `   - ${path.join(OG_IMAGES_DIR, `${domain.replace(/\./g, '-')}-og-1200.webp`)}`,
+    `   - ${path.join(OG_IMAGES_DIR, `${domain.replace(/\./g, '-')}-og-800.webp`)}`,
+    ``,
+    headerLine,
+    `  STEP 2 OF 2: FAVICON`,
+    headerLine,
+    ``,
+    `OPTION A (recommended): Use https://favicon.io for best small-size legibility.`,
+    `Pick a single emoji or upload your own SVG/PNG, download the package,`,
+    `unzip into ${PUBLIC_DIR}, and skip the --resize-favicon step entirely.`,
+    ``,
+    `OPTION B: AI-generate via chat tool.`,
+    ``,
+    `1. COPY this prompt and paste it into ChatGPT, Gemini, or Grok:`,
+    ``,
+    dashLine,
+    faviconPrompt,
+    dashLine,
+    ``,
+    `2. PICK YOUR FAVORITE variation.`,
+    ``,
+    `3. SAVE the chosen image as a PNG file at this exact path:`,
+    ``,
+    `   ${faviconSavePath}`,
+    ``,
+    `4. RUN:`,
+    ``,
+    `   node scripts/generate-images.mjs --resize-favicon`,
+    ``,
+    `   This produces:`,
+    `   - ${path.join(PUBLIC_DIR, 'favicon.ico')}`,
+    `   - ${path.join(PUBLIC_DIR, 'favicon-32.png')}`,
+    `   - ${path.join(PUBLIC_DIR, 'apple-touch-icon.png')}`,
+    ``,
+    headerLine,
+    `  AFTER BOTH STEPS COMPLETE`,
+    headerLine,
+    ``,
+    `Run: node scripts/build-site.mjs`,
+    `Then: node scripts/validate-output.mjs`,
+    ``,
+    `The build script copies everything in public/ into dist/ automatically.`,
+    ``,
+    headerLine,
+    `  TIPS`,
+    headerLine,
+    ``,
+    `- "Generate 4 variations" in the prompt tells the chat tool to give you`,
+    `  multiple options. ChatGPT and Gemini both support this. Pick the best.`,
+    ``,
+    `- If a variation has weird artifacts (extra fingers, distorted text, etc),`,
+    `  just regenerate with the same prompt. AI image gen is non-deterministic.`,
+    ``,
+    `- To regenerate after editing the prompt or trying different chat tools,`,
+    `  just save the new source PNG over the old one and re-run --resize.`,
+    ``,
+    `- For the hero, the LEFT THIRD must be relatively empty so the Quick Answer`,
+    `  box overlays cleanly. If the chat tool fills the whole frame, ask it to`,
+    `  "leave the left side empty for text overlay" as a follow-up.`,
+    ``,
+    headerLine,
+    ``,
+  ].join('\n');
+
+  // Print to console
+  log('');
+  log(headerLine, 'cyan');
+  log(`  Hero image prompt for ${brandName} (${domain})`, 'cyan');
+  log(headerLine, 'cyan');
+  log('');
+  log('Copy this and paste into ChatGPT, Gemini, or Grok:', 'bold');
+  log('');
+  log(heroPrompt, 'green');
+  log('');
+  log(`Save your favorite as: ${HERO_SOURCE}`, 'yellow');
+  log(`Then run:               node scripts/generate-images.mjs --resize-hero`, 'yellow');
+  log('');
+  log(headerLine, 'cyan');
+  log(`  Favicon prompt for ${brandName}`, 'cyan');
+  log(headerLine, 'cyan');
+  log('');
+  log(`(Optional — recommended alternative: use https://favicon.io for best results)`, 'gray');
+  log('');
+  log('Or copy this prompt:', 'bold');
+  log('');
+  log(faviconPrompt, 'green');
+  log('');
+  log(`Save your favorite as: ${FAVICON_SOURCE}`, 'yellow');
+  log(`Then run:               node scripts/generate-images.mjs --resize-favicon`, 'yellow');
+  log('');
+
+  // Save full instructions to file
+  const instructionsPath = path.join(OG_IMAGES_DIR, 'INSTRUCTIONS.txt');
+  await fs.writeFile(instructionsPath, fullInstructions, 'utf8');
+  log(`Full instructions also saved to: ${ANSI.cyan}${path.relative(REPO_ROOT, instructionsPath)}${ANSI.reset}`);
+  log('');
+}
+
+// ---------------------------------------------------------------------------
+// Resize hero
+// ---------------------------------------------------------------------------
+
+async function resizeHeroImage(config) {
+  log(`${ANSI.bold}Resizing hero image${ANSI.reset}`);
+
+  // Check source exists
   try {
-    response = await ai.models.generateImages({
-      model: 'imagen-4.0-generate-001',
-      prompt: prompt,
-      config: {
-        numberOfImages: 1,
-        aspectRatio: aspectRatio,
-      },
-    });
+    await fs.access(HERO_SOURCE);
+  } catch {
+    die(`Hero source image not found at ${HERO_SOURCE}\n  Generate one via ChatGPT/Gemini/Grok and save it at that path,\n  then re-run. (Run with --prompt-only to see the prompt.)`);
+  }
+
+  // Verify the source is a valid image
+  let metadata;
+  try {
+    metadata = await sharp(HERO_SOURCE).metadata();
   } catch (err) {
-    die(`Imagen API call failed: ${err.message}\n${err.stack || ''}`);
+    die(`Source file at ${HERO_SOURCE} is not a valid image: ${err.message}`);
   }
 
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  log(`  OK    Imagen responded in ${elapsed}s`, 'green');
+  log(`  Source: ${metadata.width}x${metadata.height} ${metadata.format}`, 'gray');
 
-  if (!response.generatedImages || response.generatedImages.length === 0) {
-    die(`Imagen returned no images. Full response: ${JSON.stringify(response, null, 2)}`);
+  // Sanity-check aspect ratio — warn if not approximately 16:9
+  const ratio = metadata.width / metadata.height;
+  const targetRatio = 16 / 9;
+  if (Math.abs(ratio - targetRatio) > 0.15) {
+    log(`  WARN  Source aspect ratio is ${ratio.toFixed(2)} (target is ${targetRatio.toFixed(2)}).`, 'yellow');
+    log(`        Resize will center-crop to 16:9, which may lose content at edges.`, 'yellow');
   }
-
-  const imageBytes = response.generatedImages[0].image.imageBytes;
-  return Buffer.from(imageBytes, 'base64');
-}
-
-// ---------------------------------------------------------------------------
-// Hero image generation + resize
-// ---------------------------------------------------------------------------
-
-async function generateHero(config) {
-  log(`${ANSI.bold}Hero image${ANSI.reset}`);
-
-  const publicDir = path.join(path.dirname(configPath), 'public', 'og-images');
-  await fs.mkdir(publicDir, { recursive: true });
 
   const stem = `${domain.replace(/\./g, '-')}-og`;
   const variants = [
@@ -203,97 +345,83 @@ async function generateHero(config) {
     { width: 800,  height: 450,  suffix: '800' },
   ];
 
-  // Check if all three variants already exist
-  if (!force) {
-    let allExist = true;
-    for (const v of variants) {
-      const filePath = path.join(publicDir, `${stem}-${v.suffix}.webp`);
-      try { await fs.access(filePath); } catch { allExist = false; break; }
-    }
-    if (allExist) {
-      log(`  SKIP  All three hero variants already exist. Use --force to regenerate.`, 'yellow');
-      return;
-    }
-  }
-
-  const prompt = buildHeroPrompt(config);
-  log(`  Prompt: ${ANSI.gray}${prompt.substring(0, 100)}...${ANSI.reset}`);
-
-  // Imagen 4 supports 16:9 aspect ratio natively (returns ~1408x768 base)
-  // We resize from the returned image to our three target sizes
-  const sourcePng = await generateImageWithImagen(prompt, '16:9');
-
-  log(`  Resizing to 3 variants and converting to WebP...`, 'gray');
-
   for (const v of variants) {
-    const outPath = path.join(publicDir, `${stem}-${v.suffix}.webp`);
-    await sharp(sourcePng)
+    const outPath = path.join(OG_IMAGES_DIR, `${stem}-${v.suffix}.webp`);
+    await sharp(HERO_SOURCE)
       .resize(v.width, v.height, { fit: 'cover', position: 'center' })
       .webp({ quality: 85 })
       .toFile(outPath);
     const stats = await fs.stat(outPath);
-    log(`  OK    Wrote ${path.relative(REPO_ROOT, outPath)} (${(stats.size / 1024).toFixed(0)} KB)`, 'green');
+    log(`  OK    Wrote ${path.relative(REPO_DIR, outPath)} (${(stats.size / 1024).toFixed(0)} KB)`, 'green');
   }
 
-  // Also save the source PNG for posterity / regeneration
-  const sourcePath = path.join(publicDir, `${stem}-source.png`);
-  await fs.writeFile(sourcePath, sourcePng);
-  log(`  OK    Wrote ${path.relative(REPO_ROOT, sourcePath)} (source backup)`, 'green');
+  log('');
 }
 
 // ---------------------------------------------------------------------------
-// Favicon generation + resize
+// Resize favicon
 // ---------------------------------------------------------------------------
 
-async function generateFavicon(config) {
-  log(`${ANSI.bold}Favicon${ANSI.reset}`);
+async function resizeFaviconImage(config) {
+  log(`${ANSI.bold}Resizing favicon${ANSI.reset}`);
 
-  const publicDir = path.join(path.dirname(configPath), 'public');
-  await fs.mkdir(publicDir, { recursive: true });
-
-  const targets = [
-    { width: 32,  filename: 'favicon-32.png' },
-    { width: 180, filename: 'apple-touch-icon.png' },
-  ];
-
-  if (!force) {
-    let allExist = true;
-    for (const t of targets) {
-      const filePath = path.join(publicDir, t.filename);
-      try { await fs.access(filePath); } catch { allExist = false; break; }
-    }
-    if (allExist) {
-      log(`  SKIP  Favicon files already exist. Use --force to regenerate.`, 'yellow');
-      return;
-    }
+  // Check source exists
+  try {
+    await fs.access(FAVICON_SOURCE);
+  } catch {
+    die(`Favicon source image not found at ${FAVICON_SOURCE}\n  Generate one via ChatGPT/Gemini/Grok and save it at that path,\n  OR use https://favicon.io (recommended) to generate a favicon package\n  and unzip it directly into ${PUBLIC_DIR}.\n  (Run with --prompt-only to see the favicon prompt.)`);
   }
 
-  const prompt = buildFaviconPrompt(config);
-  log(`  Prompt: ${ANSI.gray}${prompt.substring(0, 100)}...${ANSI.reset}`);
-
-  const sourcePng = await generateImageWithImagen(prompt, '1:1');
-
-  log(`  Resizing to favicon sizes...`, 'gray');
-
-  for (const t of targets) {
-    const outPath = path.join(publicDir, t.filename);
-    await sharp(sourcePng)
-      .resize(t.width, t.width, { fit: 'cover', position: 'center' })
-      .png()
-      .toFile(outPath);
-    const stats = await fs.stat(outPath);
-    log(`  OK    Wrote ${path.relative(REPO_ROOT, outPath)} (${(stats.size / 1024).toFixed(0)} KB)`, 'green');
+  let metadata;
+  try {
+    metadata = await sharp(FAVICON_SOURCE).metadata();
+  } catch (err) {
+    die(`Source file at ${FAVICON_SOURCE} is not a valid image: ${err.message}`);
   }
 
-  // Generate favicon.ico from the 32x32 PNG (single-resolution ICO)
-  // Modern browsers accept PNG-encoded ICOs; sharp can write them via raw output
-  // For full multi-resolution ICO we'd use the 'png-to-ico' package, but the
-  // single-res 32x32 covers the common case
-  const ico32Buffer = await sharp(sourcePng).resize(32, 32, { fit: 'cover' }).png().toBuffer();
-  await fs.writeFile(path.join(publicDir, 'favicon.ico'), ico32Buffer);
-  log(`  OK    Wrote public/favicon.ico (single-resolution 32x32)`, 'green');
+  log(`  Source: ${metadata.width}x${metadata.height} ${metadata.format}`, 'gray');
 
-  log(`  ${ANSI.gray}Note: For production sites, consider replacing favicon.ico with a hand-crafted version from favicon.io for best small-size legibility.${ANSI.reset}`);
+  // Should be square; warn if not
+  if (metadata.width !== metadata.height) {
+    log(`  WARN  Source is not square (${metadata.width}x${metadata.height}).`, 'yellow');
+    log(`        Resize will center-crop to square, which may lose content.`, 'yellow');
+  }
+
+  await fs.mkdir(PUBLIC_DIR, { recursive: true });
+
+  // 32x32 PNG
+  const png32Path = path.join(PUBLIC_DIR, 'favicon-32.png');
+  await sharp(FAVICON_SOURCE)
+    .resize(32, 32, { fit: 'cover', position: 'center' })
+    .png()
+    .toFile(png32Path);
+  const png32Stats = await fs.stat(png32Path);
+  log(`  OK    Wrote ${path.relative(REPO_DIR, png32Path)} (${(png32Stats.size / 1024).toFixed(1)} KB)`, 'green');
+
+  // 180x180 apple-touch-icon
+  const applePath = path.join(PUBLIC_DIR, 'apple-touch-icon.png');
+  await sharp(FAVICON_SOURCE)
+    .resize(180, 180, { fit: 'cover', position: 'center' })
+    .png()
+    .toFile(applePath);
+  const appleStats = await fs.stat(applePath);
+  log(`  OK    Wrote ${path.relative(REPO_DIR, applePath)} (${(appleStats.size / 1024).toFixed(1)} KB)`, 'green');
+
+  // favicon.ico — single-resolution 32x32 PNG-encoded ICO
+  // Modern browsers accept PNG-encoded ICOs. Sharp doesn't directly write ICO,
+  // but we can write a 32x32 PNG and Cloudflare/browsers handle the .ico
+  // extension based on the file content. This is a common simplification.
+  const icoPath = path.join(PUBLIC_DIR, 'favicon.ico');
+  await sharp(FAVICON_SOURCE)
+    .resize(32, 32, { fit: 'cover', position: 'center' })
+    .png()
+    .toFile(icoPath);
+  const icoStats = await fs.stat(icoPath);
+  log(`  OK    Wrote ${path.relative(REPO_DIR, icoPath)} (${(icoStats.size / 1024).toFixed(1)} KB, PNG-encoded ICO)`, 'green');
+  log(`        ${ANSI.gray}For multi-resolution ICO (16x16+32x32+48x48 in one file),${ANSI.reset}`);
+  log(`        ${ANSI.gray}use https://favicon.io which packages all sizes correctly.${ANSI.reset}`);
+
+  log('');
 }
 
 // ---------------------------------------------------------------------------
@@ -301,13 +429,24 @@ async function generateFavicon(config) {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  if (doHero) await generateHero(config);
-  if (doHero && doFavicon) log('');
-  if (doFavicon) await generateFavicon(config);
+  log(`${ANSI.bold}generate-images${ANSI.reset}`);
+  log(`Domain:  ${domain}`, 'gray');
+  log(`Niche:   ${niche}`, 'gray');
+  log(`Keyword: ${primaryKeyword}`, 'gray');
 
+  // If neither resize flag was set, we're in prompt-only mode
+  if (promptOnly && !resizeHero && !resizeFavicon) {
+    await printPrompts(config);
+    log(`${ANSI.green}${ANSI.bold}Ready.${ANSI.reset} Follow the steps above, then re-run with --resize.`);
+    return;
+  }
+
+  if (resizeHero) await resizeHeroImage(config);
+  if (resizeFavicon) await resizeFaviconImage(config);
+
+  log(`${ANSI.green}${ANSI.bold}Resize complete.${ANSI.reset}`);
+  log(`Next: ${ANSI.cyan}node scripts/build-site.mjs${ANSI.reset}`);
   log('');
-  log(`${ANSI.green}${ANSI.bold}Image generation complete.${ANSI.reset}`);
-  log(`Run ${ANSI.cyan}node scripts/build-site.mjs${ANSI.reset} to rebuild the site with the new images.`);
 }
 
 main().catch(err => {
