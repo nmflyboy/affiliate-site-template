@@ -1,0 +1,91 @@
+========================================================================
+  IMAGE GENERATION INSTRUCTIONS — BrewVerdict (brewverdict.com)
+========================================================================
+
+Niche:        specialty coffee brewing equipment
+Keyword:      best pour over coffee makers
+Brand colors: #3D2817 primary / #C9A961 accent
+
+========================================================================
+  STEP 1 OF 2: HERO IMAGE
+========================================================================
+
+1. COPY this prompt and paste it into ChatGPT, Gemini, or Grok:
+
+----------------------------------------------------------------------
+Generate 4 variations of a wide horizontal hero image with a 16:9 aspect ratio, designed as a website header for an editorial review site. Subject: a tasteful editorial scene depicting specialty coffee brewing equipment. Specifically include visual elements that a reader searching for "best pour over coffee makers" would find relevant and trustworthy. Composition: leave the LEFT THIRD of the frame relatively uncluttered so readable text could be overlaid in that area. Main subject positioned in the center-right of the frame. Style: editorial photographic style with shallow depth of field, soft natural lighting (golden hour or soft morning light) coming from the side. Slightly blurred natural background suggesting an appropriate setting for the subject matter. Sharp focus on the main subject. Color tone: warm and inviting, restrained palette, magazine-quality aesthetic suggesting a premium product review. Forbidden elements: NO people facing the camera, NO celebrity likenesses, NO copyrighted characters, NO brand names visible, NO logos, NO text overlays, NO watermarks, NO UI elements, NO promotional banners.
+----------------------------------------------------------------------
+
+2. The chat tool generates 4 variations. PICK YOUR FAVORITE.
+
+3. SAVE the chosen image as a PNG file at this exact path:
+
+   C:\Code\sites\affiliate-site-template\public\og-images\source.png
+
+4. RUN:
+
+   node scripts/generate-images.mjs --resize-hero
+
+   This produces:
+   - C:\Code\sites\affiliate-site-template\public\og-images\brewverdict-com-og-1920.webp
+   - C:\Code\sites\affiliate-site-template\public\og-images\brewverdict-com-og-1200.webp
+   - C:\Code\sites\affiliate-site-template\public\og-images\brewverdict-com-og-800.webp
+
+========================================================================
+  STEP 2 OF 2: FAVICON
+========================================================================
+
+OPTION A (recommended): Use https://favicon.io for best small-size legibility.
+Pick a single emoji or upload your own SVG/PNG, download the package,
+unzip into C:\Code\sites\affiliate-site-template\public, and skip the --resize-favicon step entirely.
+
+OPTION B: AI-generate via chat tool.
+
+1. COPY this prompt and paste it into ChatGPT, Gemini, or Grok:
+
+----------------------------------------------------------------------
+Generate 4 variations of a minimalist flat icon design. Subject: a single bold geometric symbol representing specialty coffee brewing equipment. Choose ONE iconic visual element associated with the niche (not multiple combined). Examples of good single-symbol approaches: silhouette of a key piece of equipment, stylized abstract representation, single recognizable shape. Format: square 1:1 aspect ratio. Flat 2D vector-style illustration only. Solid colors only, NO gradients, NO shadows, NO fine detail. Color palette: use only these two colors: - Primary: #3D2817 (the deeper background or main shape) - Accent: #C9A961 (the highlight or detail) Optionally a small amount of white space. Critical requirement: the design must remain legible and recognizable when scaled down to 16x16 pixels (the size of a browser favicon). Avoid any details thinner than ~5% of the icon width. Forbidden elements: NO text, NO numbers, NO letters, NO watermarks, NO photorealism, NO complex illustration, NO branded characters.
+----------------------------------------------------------------------
+
+2. PICK YOUR FAVORITE variation.
+
+3. SAVE the chosen image as a PNG file at this exact path:
+
+   C:\Code\sites\affiliate-site-template\public\favicon-source.png
+
+4. RUN:
+
+   node scripts/generate-images.mjs --resize-favicon
+
+   This produces:
+   - C:\Code\sites\affiliate-site-template\public\favicon.ico
+   - C:\Code\sites\affiliate-site-template\public\favicon-32.png
+   - C:\Code\sites\affiliate-site-template\public\apple-touch-icon.png
+
+========================================================================
+  AFTER BOTH STEPS COMPLETE
+========================================================================
+
+Run: node scripts/build-site.mjs
+Then: node scripts/validate-output.mjs
+
+The build script copies everything in public/ into dist/ automatically.
+
+========================================================================
+  TIPS
+========================================================================
+
+- "Generate 4 variations" in the prompt tells the chat tool to give you
+  multiple options. ChatGPT and Gemini both support this. Pick the best.
+
+- If a variation has weird artifacts (extra fingers, distorted text, etc),
+  just regenerate with the same prompt. AI image gen is non-deterministic.
+
+- To regenerate after editing the prompt or trying different chat tools,
+  just save the new source PNG over the old one and re-run --resize.
+
+- For the hero, the LEFT THIRD must be relatively empty so the Quick Answer
+  box overlays cleanly. If the chat tool fills the whole frame, ask it to
+  "leave the left side empty for text overlay" as a follow-up.
+
+========================================================================
