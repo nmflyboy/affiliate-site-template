@@ -1,0 +1,116 @@
+# Cloudflare Pages _headers file
+#
+# Cloudflare Pages reads this file at deploy time and applies these HTTP
+# response headers to matching paths. Documentation:
+# https://developers.cloudflare.com/pages/configuration/headers/
+#
+# Why this file exists:
+#   - securityheaders.com grades sites A or A+ when these headers are present
+#   - The headers protect against common web vulnerabilities (clickjacking,
+#     MIME sniffing, mixed content)
+#   - On Lovable Cloud this file was ignored (one of the reasons we migrated)
+#
+# How to test after deploy:
+#   - Visit https://securityheaders.com and enter your domain
+#   - Expected grade: A or A+
+#   - Each header below should appear in the report
+
+# ---------------------------------------------------------------------------
+# Default headers — applied to every path
+# ---------------------------------------------------------------------------
+
+/*
+  # Force HTTPS for one year, include subdomains, allow inclusion in browser
+  # preload lists. Once a browser sees this, it will refuse plain HTTP for
+  # this domain for the duration of max-age, even if a link omits https://.
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+  # Tell browsers to respect declared Content-Type and not "sniff" the body
+  # to guess a different one. Prevents MIME-confusion attacks where a JPEG
+  # gets interpreted as JavaScript.
+  X-Content-Type-Options: nosniff
+
+  # Refuse to be embedded in iframes on other sites. Prevents clickjacking
+  # attacks where a malicious site overlays your page inside a hidden iframe.
+  X-Frame-Options: DENY
+
+  # Send the full referrer for same-origin requests but only the origin
+  # (no path) for cross-origin requests over HTTPS. Balances analytics
+  # value with user privacy.
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Disable browser features we don't use. If a future script tries to
+  # access these APIs, it fails — defense in depth against compromised
+  # third-party scripts.
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()
+
+  # Content Security Policy.
+  #
+  # This policy allows:
+  #   - All resources from the same origin (self)
+  #   - Inline styles (we use inline critical CSS — rule 03-8.1)
+  #   - Google Fonts CSS + font files
+  #   - Google Analytics (analytics.google.com, googletagmanager.com)
+  #   - Inline scripts (we use the GA4 snippet inline)
+  #   - Data URIs for images (used by some inline SVG patterns)
+  #
+  # If you add a new third-party script (Plausible, Fathom, a chat widget),
+  # you'll need to add its domain to the script-src and connect-src lines.
+  # Sites that try to load resources not in this policy will silently fail
+  # in the browser — check DevTools console for CSP violations.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+# ---------------------------------------------------------------------------
+# Static asset caching — long cache for content-addressed files
+# ---------------------------------------------------------------------------
+
+# WebP images in og-images/ rarely change after deploy. Cache hard.
+/og-images/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Favicons rarely change. Cache hard.
+/favicon.ico
+  Cache-Control: public, max-age=31536000, immutable
+/apple-touch-icon.png
+  Cache-Control: public, max-age=31536000, immutable
+/favicon-32.png
+  Cache-Control: public, max-age=31536000, immutable
+
+# ---------------------------------------------------------------------------
+# Dynamic asset caching — shorter for HTML in case of content updates
+# ---------------------------------------------------------------------------
+
+# Homepage and subpages. Allow browser caching for 1 hour, then revalidate
+# with the server. Cloudflare CDN caches longer based on Edge TTL settings.
+/
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/about/
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/contact/
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/privacy/
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/disclosure/
+  Cache-Control: public, max-age=3600, must-revalidate
+
+# ---------------------------------------------------------------------------
+# /go/ redirects — no cache, no index
+# ---------------------------------------------------------------------------
+
+/go/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+# ---------------------------------------------------------------------------
+# robots.txt and sitemap.xml — short cache, allow revalidation
+# ---------------------------------------------------------------------------
+
+/robots.txt
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/sitemap.xml
+  Cache-Control: public, max-age=3600, must-revalidate
